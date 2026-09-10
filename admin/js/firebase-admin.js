@@ -39,6 +39,7 @@ const pendingNotesTable = document.getElementById("pendingNotesTable");
 const approvedNotesTable = document.getElementById("approvedNotesTable");
 const rejectedNotesTable = document.getElementById("rejectedNotesTable");
 const usersTable = document.getElementById("usersTable");
+const contactMessagesTable = document.getElementById("contactMessagesTable");
 
 
 // ======================================
@@ -464,7 +465,9 @@ async function refreshAdmin() {
 
         loadRejectedNotes(),
 
-        loadUsers()
+        loadUsers(),
+
+        loadContactMessages()
 
     ]);
 
@@ -1172,6 +1175,321 @@ function renderUsers(users) {
 }
 
 // ======================================
+// CONTACT MESSAGES
+// ======================================
+
+let contactMessages = [];
+
+async function loadContactMessages() {
+
+    if (!contactMessagesTable) return;
+
+    try {
+
+        contactMessages = await getContactMessages();
+
+        renderContactMessages(contactMessages);
+
+    } catch (error) {
+
+        console.error("Error loading contact messages:", error);
+
+        contactMessagesTable.innerHTML = `
+            <tr>
+                <td colspan="6" class="empty-state">
+                    Unable to load contact messages.
+                </td>
+            </tr>
+        `;
+    }
+}
+
+
+// ======================================
+// RENDER CONTACT MESSAGES
+// ======================================
+
+function renderContactMessages(messages) {
+
+    contactMessagesTable.innerHTML = "";
+
+    if (!messages.length) {
+
+        contactMessagesTable.innerHTML = `
+            <tr>
+                <td colspan="6" class="empty-state">
+                    No contact messages found.
+                </td>
+            </tr>
+        `;
+
+        return;
+    }
+
+    messages.forEach(message => {
+
+        const row = document.createElement("tr");
+
+        const senderCell = document.createElement("td");
+        senderCell.textContent = message.name || "-";
+
+        const emailCell = document.createElement("td");
+        emailCell.textContent = message.email || "-";
+
+        const subjectCell = document.createElement("td");
+        subjectCell.textContent = message.subject || "-";
+
+        const dateCell = document.createElement("td");
+        dateCell.textContent = formatDate(message.createdAt);
+
+        const statusCell = document.createElement("td");
+
+        const statusBadge = document.createElement("span");
+        statusBadge.className = `badge ${message.status || "unread"}`;
+        statusBadge.textContent =
+            message.status === "read" ? "Read" : "Unread";
+
+        statusCell.appendChild(statusBadge);
+
+        const actionCell = document.createElement("td");
+
+        const actionWrapper = document.createElement("div");
+        actionWrapper.className = "action-buttons";
+
+        const viewButton = document.createElement("button");
+        viewButton.className = "view-btn";
+        viewButton.innerHTML = `
+            <i class="fa-solid fa-eye"></i>
+        `;
+        viewButton.title = "View message";
+
+        viewButton.addEventListener("click", () => {
+            openContactMessage(message.id);
+        });
+
+        actionWrapper.appendChild(viewButton);
+
+        actionCell.appendChild(actionWrapper);
+
+        row.appendChild(senderCell);
+        row.appendChild(emailCell);
+        row.appendChild(subjectCell);
+        row.appendChild(dateCell);
+        row.appendChild(statusCell);
+        row.appendChild(actionCell);
+
+        contactMessagesTable.appendChild(row);
+
+    });
+}
+
+
+// ======================================
+// OPEN CONTACT MESSAGE
+// ======================================
+
+function openContactMessage(messageId) {
+
+    const message = contactMessages.find(
+        item => item.id === messageId
+    );
+
+    if (!message) return;
+
+    const modal = document.getElementById("contactMessageModal");
+
+    document.getElementById("contactModalName").textContent =
+        message.name || "-";
+
+    document.getElementById("contactModalEmail").textContent =
+        message.email || "-";
+
+    document.getElementById("contactModalSubject").textContent =
+        message.subject || "-";
+
+    document.getElementById("contactModalDate").textContent =
+        formatDate(message.createdAt);
+
+    document.getElementById("contactModalMessage").textContent =
+        message.message || "-";
+
+    modal.style.display = "flex";
+
+    // Mark as read when opened
+    if (message.status !== "read") {
+
+        markContactMessageAsRead(message.id)
+            .then(() => {
+
+                message.status = "read";
+
+                renderContactMessages(
+                    getFilteredContactMessages()
+                );
+
+            })
+            .catch(error => {
+
+                console.error(
+                    "Error marking message as read:",
+                    error
+                );
+
+            });
+    }
+
+    const markReadButton =
+        document.getElementById("markContactReadBtn");
+
+    if (markReadButton) {
+
+        markReadButton.style.display =
+            message.status === "read"
+                ? "none"
+                : "inline-flex";
+
+    }
+
+    const deleteButton =
+        document.getElementById("deleteContactBtn");
+
+    if (deleteButton) {
+
+        deleteButton.onclick = async () => {
+
+            const confirmed = confirm(
+                "Are you sure you want to delete this message?"
+            );
+
+            if (!confirmed) return;
+
+            try {
+
+                await deleteContactMessage(message.id);
+
+                contactMessages =
+                    contactMessages.filter(
+                        item => item.id !== message.id
+                    );
+
+                modal.style.display = "none";
+
+                renderContactMessages(
+                    getFilteredContactMessages()
+                );
+
+                showToast(
+                    "Contact message deleted successfully.",
+                    "success"
+                );
+
+            } catch (error) {
+
+                console.error(
+                    "Error deleting contact message:",
+                    error
+                );
+
+                showToast(
+                    "Failed to delete contact message.",
+                    "error"
+                );
+            }
+        };
+    }
+}
+
+
+// ======================================
+// CLOSE CONTACT MESSAGE MODAL
+// ======================================
+
+function closeContactMessageModal() {
+
+    const modal =
+        document.getElementById("contactMessageModal");
+
+    if (modal) {
+        modal.style.display = "none";
+    }
+}
+
+document
+    .getElementById("closeContactMessageModal")
+    ?.addEventListener(
+        "click",
+        closeContactMessageModal
+    );
+
+document
+    .getElementById("closeContactMessageBtn")
+    ?.addEventListener(
+        "click",
+        closeContactMessageModal
+    );
+
+
+// ======================================
+// SEARCH + FILTER
+// ======================================
+
+function getFilteredContactMessages() {
+
+    const searchInput =
+        document.getElementById("contactSearch");
+
+    const statusFilter =
+        document.getElementById("contactStatusFilter");
+
+    const search =
+        searchInput?.value
+            .trim()
+            .toLowerCase() || "";
+
+    const status =
+        statusFilter?.value || "";
+
+    return contactMessages.filter(message => {
+
+        const matchesSearch =
+            !search ||
+            (message.name || "").toLowerCase().includes(search) ||
+            (message.email || "").toLowerCase().includes(search) ||
+            (message.subject || "").toLowerCase().includes(search) ||
+            (message.message || "").toLowerCase().includes(search);
+
+        const matchesStatus =
+            !status ||
+            message.status === status;
+
+        return matchesSearch && matchesStatus;
+
+    });
+}
+
+
+document
+    .getElementById("contactSearch")
+    ?.addEventListener("input", () => {
+
+        renderContactMessages(
+            getFilteredContactMessages()
+        );
+
+    });
+
+
+document
+    .getElementById("contactStatusFilter")
+    ?.addEventListener("change", () => {
+
+        renderContactMessages(
+            getFilteredContactMessages()
+        );
+
+    });
+
+// ======================================
 // Current Admin Profile
 // ======================================
 
@@ -1360,3 +1678,108 @@ document.addEventListener(
     initAdmin
 
 );
+
+// ======================================
+// CONTACT MESSAGES
+// ======================================
+
+export async function getContactMessages() {
+
+    try {
+
+        const messagesQuery = query(
+            collection(db, "contactMessages"),
+            orderBy("createdAt", "desc")
+        );
+
+        const snapshot = await getDocs(messagesQuery);
+
+        const messages = [];
+
+        snapshot.forEach(docSnap => {
+
+            messages.push({
+
+                id: docSnap.id,
+
+                ...docSnap.data()
+
+            });
+
+        });
+
+        return messages;
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Error loading contact messages:",
+            error
+        );
+
+        throw error;
+
+    }
+
+}
+
+
+// ======================================
+// MARK CONTACT MESSAGE AS READ
+// ======================================
+
+export async function markContactMessageAsRead(messageId) {
+
+    try {
+
+        await updateDoc(
+            doc(db, "contactMessages", messageId),
+            {
+                status: "read"
+            }
+        );
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Error marking contact message as read:",
+            error
+        );
+
+        throw error;
+
+    }
+
+}
+
+
+// ======================================
+// DELETE CONTACT MESSAGE
+// ======================================
+
+export async function deleteContactMessage(messageId) {
+
+    try {
+
+        await deleteDoc(
+            doc(db, "contactMessages", messageId)
+        );
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Error deleting contact message:",
+            error
+        );
+
+        throw error;
+
+    }
+
+}

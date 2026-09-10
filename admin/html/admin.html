@@ -59,6 +59,10 @@
                     <i class="fa-solid fa-users"></i>
                     <span>Users</span>
                 </a>
+                <a href="#contact-messages" class="nav-link">
+                    <i class="fa-solid fa-envelope"></i>
+                    <span>Contact Messages</span>
+                </a>
                 <a href="#settings" class="nav-link">
                     <i class="fa-solid fa-gear"></i>
                     <span>Settings</span>
@@ -338,6 +342,55 @@
             </section>
 
             <!-- =========================================
+     Contact Messages
+========================================= -->
+
+            <section id="contact-messages" class="page-section">
+
+                <div class="section-header">
+                    <div>
+                        <h2>Contact Messages</h2>
+                        <p>Messages submitted through the Contact Us page.</p>
+                    </div>
+                </div>
+
+                <div class="toolbar">
+
+                    <input id="contactSearch" type="text" placeholder="Search messages...">
+
+                    <select id="contactStatusFilter">
+                        <option value="">All Messages</option>
+                        <option value="unread">Unread</option>
+                        <option value="read">Read</option>
+                    </select>
+
+                </div>
+
+                <div class="card">
+
+                    <table class="data-table">
+
+                        <thead>
+                            <tr>
+                                <th>Sender</th>
+                                <th>Email</th>
+                                <th>Subject</th>
+                                <th>Submitted</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="contactMessagesTable">
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </section>
+
+            <!-- =========================================
      Settings
 ========================================= -->
 
@@ -509,6 +562,103 @@
                             </button>
 
                             <button class="delete-btn" id="confirmDelete">
+
+                                Delete
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- =========================================
+     Contact Message Modal
+========================================= -->
+
+            <div id="contactMessageModal" class="modal">
+
+                <div class="modal-content contact-message-modal">
+
+                    <div class="modal-header">
+
+                        <h3>Contact Message</h3>
+
+                        <button class="close-modal" id="closeContactMessageModal" type="button">
+
+                            <i class="fa-solid fa-xmark"></i>
+
+                        </button>
+
+                    </div>
+
+
+                    <div class="modal-body">
+
+                        <!-- Message Information -->
+
+                        <div class="contact-message-info">
+
+                            <div>
+                                <span>From</span>
+                                <strong id="contactModalName">-</strong>
+                            </div>
+
+                            <div>
+                                <span>Email</span>
+                                <strong id="contactModalEmail">-</strong>
+                            </div>
+
+                            <div>
+                                <span>Subject</span>
+                                <strong id="contactModalSubject">-</strong>
+                            </div>
+
+                            <div>
+                                <span>Submitted</span>
+                                <strong id="contactModalDate">-</strong>
+                            </div>
+
+                        </div>
+
+
+                        <!-- Message -->
+
+                        <div class="contact-message-content">
+
+                            <span>Message</span>
+
+                            <p id="contactModalMessage">
+                                -
+                            </p>
+
+                        </div>
+
+
+                        <!-- Actions -->
+
+                        <div class="modal-actions">
+
+                            <button class="cancel-btn" id="closeContactMessageBtn" type="button">
+
+                                Close
+
+                            </button>
+
+                            <button class="save-btn" id="markContactReadBtn" type="button">
+
+                                <i class="fa-solid fa-check"></i>
+
+                                Mark as Read
+
+                            </button>
+
+                            <button class="delete-btn" id="deleteContactBtn" type="button">
+
+                                <i class="fa-solid fa-trash"></i>
 
                                 Delete
 
