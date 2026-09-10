@@ -87,6 +87,7 @@ const confirmDeleteBtn = document.getElementById("confirmDelete");
 const cancelDeleteBtn = document.getElementById("cancelDelete");
 const closeDeleteModal = document.getElementById("closeDeleteModal");
 let noteToDelete = null;
+let contactMessageToDelete = null;
 
 function openDeleteModal(noteId, noteTitle) {
 
@@ -102,11 +103,17 @@ function openDeleteModal(noteId, noteTitle) {
 function closeDelete() {
 
     noteToDelete = null;
+    contactMessageToDelete = null;
+
+    deleteModal.querySelector("h3").textContent =
+        "Delete Note";
+
+    deleteModal.querySelector("h2").textContent =
+        "Delete this note?";
 
     deleteModal.classList.remove("show");
 
 }
-
 cancelDeleteBtn.addEventListener("click", closeDelete);
 
 closeDeleteModal.addEventListener("click", closeDelete);
@@ -443,8 +450,80 @@ async function confirmDeleteNote() {
 }
 confirmDeleteBtn.addEventListener(
     "click",
-    confirmDeleteNote
+    async () => {
+
+        if (contactMessageToDelete) {
+
+            await confirmDeleteContactMessage();
+
+        } else {
+
+            await confirmDeleteNote();
+
+        }
+
+    }
 );
+
+async function confirmDeleteContactMessage() {
+
+    if (!contactMessageToDelete) return;
+
+    try {
+
+        await deleteContactMessage(
+            contactMessageToDelete
+        );
+
+        contactMessages =
+            contactMessages.filter(
+                message =>
+                    message.id !== contactMessageToDelete
+            );
+
+        closeDelete();
+
+        const contactModal =
+            document.getElementById(
+                "contactMessageModal"
+            );
+
+        if (contactModal) {
+
+            contactModal.style.display = "none";
+
+        }
+
+        renderContactMessages(
+            getFilteredContactMessages()
+        );
+
+        showToast(
+            "success",
+            "Message Deleted",
+            "The contact message was deleted successfully."
+        );
+
+        contactMessageToDelete = null;
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Error deleting contact message:",
+            error
+        );
+
+        showToast(
+            "error",
+            "Delete Failed",
+            "Unable to delete the contact message."
+        );
+
+    }
+
+}
 
 
 // ======================================
@@ -1338,65 +1417,23 @@ function openContactMessage(messageId) {
             });
     }
 
-    const markReadButton =
-        document.getElementById("markContactReadBtn");
 
-    if (markReadButton) {
-
-        markReadButton.style.display =
-            message.status === "read"
-                ? "none"
-                : "inline-flex";
-
-    }
 
     const deleteButton =
         document.getElementById("deleteContactBtn");
 
     if (deleteButton) {
 
-        deleteButton.onclick = async () => {
+        deleteButton.onclick = () => {
+            // Close the contact message modal first
+            modal.style.display = "none";
+            // Then open the delete confirmation modal
+            openContactDeleteModal(message.id);
 
-            const confirmed = confirm(
-                "Are you sure you want to delete this message?"
-            );
-
-            if (!confirmed) return;
-
-            try {
-
-                await deleteContactMessage(message.id);
-
-                contactMessages =
-                    contactMessages.filter(
-                        item => item.id !== message.id
-                    );
-
-                modal.style.display = "none";
-
-                renderContactMessages(
-                    getFilteredContactMessages()
-                );
-
-                showToast(
-                    "Contact message deleted successfully.",
-                    "success"
-                );
-
-            } catch (error) {
-
-                console.error(
-                    "Error deleting contact message:",
-                    error
-                );
-
-                showToast(
-                    "Failed to delete contact message.",
-                    "error"
-                );
-            }
         };
+
     }
+
 }
 
 
@@ -1427,6 +1464,33 @@ document
         "click",
         closeContactMessageModal
     );
+
+// ======================================
+// CONTACT MESSAGE DELETE
+// ======================================
+
+function openContactDeleteModal(messageId) {
+
+    const message = contactMessages.find(
+        item => item.id === messageId
+    );
+
+    if (!message) return;
+
+    contactMessageToDelete = messageId;
+
+    document.getElementById("deleteMessage").textContent =
+        `Are you sure you want to permanently delete the message from "${message.name || "this user"}"? This action cannot be undone.`;
+
+    deleteModal.querySelector("h3").textContent =
+        "Delete Contact Message";
+
+    deleteModal.querySelector("h2").textContent =
+        "Delete this message?";
+
+    deleteModal.classList.add("show");
+
+}
 
 
 // ======================================

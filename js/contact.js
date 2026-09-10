@@ -7,6 +7,9 @@ import {
 
 const contactForm = document.getElementById("contactForm");
 const submitButton = contactForm.querySelector(".btn-submit");
+const successModal = document.getElementById("contactSuccessModal");
+const successClose = document.getElementById("contactSuccessClose");
+const successOk = document.getElementById("contactSuccessOk");
 
 contactForm.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -37,9 +40,8 @@ contactForm.addEventListener("submit", async (e) => {
             createdAt: serverTimestamp()
         });
 
-        alert("Thank you! Your message has been sent successfully.");
-
         contactForm.reset();
+        openSuccessModal();
 
     } catch (error) {
 
@@ -58,3 +60,37 @@ contactForm.addEventListener("submit", async (e) => {
 
     }
 });
+function openSuccessModal() {
+
+    successModal.classList.add("show");
+
+}
+
+function closeSuccessModal() {
+
+    successModal.classList.remove("show");
+
+}
+
+successClose.addEventListener(
+    "click",
+    closeSuccessModal
+);
+
+successOk.addEventListener(
+    "click",
+    closeSuccessModal
+);
+
+successModal.addEventListener(
+    "click",
+    (event) => {
+
+        if (event.target === successModal) {
+
+            closeSuccessModal();
+
+        }
+
+    }
+);

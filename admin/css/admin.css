@@ -1090,6 +1090,89 @@ body {
 }
 
 /* =========================================
+   CONTACT MESSAGE ACTIONS
+========================================= */
+
+.contact-message-modal .modal-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 26px;
+    padding-top: 22px;
+    border-top: 1px solid #e2e8f0;
+}
+
+.contact-message-modal .modal-actions button {
+    height: 52px;
+    min-width: 100px;
+    padding: 0 22px;
+    border: none;
+    border-radius: 12px;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+
+    cursor: pointer;
+    transition:
+        transform 0.2s ease,
+        background 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+/* Close */
+
+.contact-message-modal .cancel-btn {
+    background: #e2e8f0;
+    color: #1e293b;
+}
+
+.contact-message-modal .cancel-btn:hover {
+    background: #cbd5e1;
+    transform: translateY(-1px);
+}
+
+/* Delete */
+
+.contact-message-modal .delete-btn {
+    background: #dc2626;
+    color: #ffffff;
+}
+
+.contact-message-modal .delete-btn:hover {
+    background: #b91c1c;
+    transform: translateY(-1px);
+    box-shadow: 0 5px 12px rgba(220, 38, 38, 0.18);
+}
+
+/* Icons */
+
+.contact-message-modal .modal-actions i {
+    font-size: 14px;
+}
+
+/* Mobile */
+
+@media (max-width: 500px) {
+
+    .contact-message-modal .modal-actions {
+        flex-direction: column-reverse;
+        align-items: stretch;
+    }
+
+    .contact-message-modal .modal-actions button {
+        width: 100%;
+    }
+
+}
+
+/* =========================================
    Animation
 ========================================= */
 
