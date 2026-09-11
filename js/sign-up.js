@@ -21,6 +21,8 @@ form.addEventListener("submit", async (e) => {
 
     const name =
         document.getElementById("name").value.trim();
+    const college =
+        document.getElementById("college").value.trim();
 
     const email =
         document.getElementById("email").value.trim();
@@ -40,6 +42,33 @@ form.addEventListener("submit", async (e) => {
 
     errorBox.style.display = "none";
 
+
+    errorBox.style.display = "none";
+
+
+    // =========================================
+    // Required Field Validation
+    // =========================================
+
+    if (!name) {
+
+        errorBox.style.display = "block";
+
+        errorBox.textContent =
+            "Please enter your full name.";
+
+        return;
+    }
+
+    if (!college) {
+
+        errorBox.style.display = "block";
+
+        errorBox.textContent =
+            "Please enter your college or university.";
+
+        return;
+    }
 
     // =========================================
     // Password Validation
@@ -87,6 +116,7 @@ form.addEventListener("submit", async (e) => {
             doc(db, "users", user.uid),
             {
                 name: name,
+                college: college,
                 email: email,
                 branch: branch || "",
                 year: year || "",
@@ -147,3 +177,4 @@ form.addEventListener("submit", async (e) => {
     }
 
 });
+
