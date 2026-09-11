@@ -480,6 +480,10 @@ async function handleFormSubmit(event) {
         document.getElementById("description")
             .value.trim();
 
+    const college =
+        document.getElementById("college")
+            .value.trim();
+
 
     const branch =
         document.getElementById("branch")
@@ -597,6 +601,8 @@ async function handleFormSubmit(event) {
                 title,
 
                 description,
+
+                college,
 
                 branch,
 

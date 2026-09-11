@@ -10,9 +10,10 @@
     <link rel="stylesheet" href="/css/browse.css">
     <link rel="stylesheet" href="/css/nav-bar.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
 </head>
 
 <body>
@@ -28,66 +29,54 @@
             <li><a href="/main/chat.html">Chat</a></li>
             <li><a href="/main/upload.html">Upload</a></li>
             <li id="adminLink" class="hidden">
-            <a href="/admin/html/admin.html">Admin</a></li>
+                <a href="/admin/html/admin.html">Admin</a>
+            </li>
         </ul>
-<div class="nav-auth">
+        <div class="nav-auth">
 
-    <!-- Notification -->
-    <div class="notification-wrapper">
+            <!-- Notification -->
+            <div class="notification-wrapper">
 
-        <button
-            class="notification-btn"
-            id="notificationBtn"
-            aria-label="Notifications"
-        >
-            🔔
+                <button class="notification-btn" id="notificationBtn" aria-label="Notifications">
+                    🔔
 
-            <span
-                class="notification-badge hidden"
-                id="notificationBadge"
-            >
-                0
-            </span>
-        </button>
+                    <span class="notification-badge hidden" id="notificationBadge">
+                        0
+                    </span>
+                </button>
 
-        <div
-            class="notification-dropdown"
-            id="notificationDropdown"
-        >
+                <div class="notification-dropdown" id="notificationDropdown">
 
-            <div class="notification-header">
-                <h3>Notifications</h3>
+                    <div class="notification-header">
+                        <h3>Notifications</h3>
+                    </div>
+
+                    <div class="notification-list" id="notificationList">
+                        <p class="notification-empty">
+                            No notifications yet.
+                        </p>
+                    </div>
+
+                </div>
+
             </div>
 
-            <div
-                class="notification-list"
-                id="notificationList"
-            >
-                <p class="notification-empty">
-                    No notifications yet.
-                </p>
+            <!-- Auth controls -->
+            <div id="authSection">
+
+                <span class="auth-loading">...</span>
+
+                <button class="btn-secondary">
+                    Sign In
+                </button>
+
+                <button class="btn-primary">
+                    Sign Up
+                </button>
+
             </div>
 
         </div>
-
-    </div>
-
-    <!-- Auth controls -->
-    <div id="authSection">
-
-        <span class="auth-loading">...</span>
-
-        <button class="btn-secondary">
-            Sign In
-        </button>
-
-        <button class="btn-primary">
-            Sign Up
-        </button>
-
-    </div>
-
-</div>
     </nav>
 
     <header class="browse-header">
@@ -99,14 +88,14 @@
 
                 <select id="branchFilter">
                     <option value="">All Branches</option>
-                            <option value="CSE">CSE</option>
-                            <option value="IT">IT</option>
-                            <option value="AIML">AIML</option>
-                            <option value="AIDS">AIDS</option>
-                            <option value="ECE">ECE</option>
-                            <option value="Mechanical">Mechanical</option>
-                            <option value="Civil">Civil</option>
-                            <option value="Electrical">Electrical</option>
+                    <option value="CSE">CSE</option>
+                    <option value="IT">IT</option>
+                    <option value="AIML">AIML</option>
+                    <option value="AIDS">AIDS</option>
+                    <option value="ECE">ECE</option>
+                    <option value="Mechanical">Mechanical</option>
+                    <option value="Civil">Civil</option>
+                    <option value="Electrical">Electrical</option>
                 </select>
 
                 <select id="yearFilter">
@@ -123,173 +112,175 @@
         </div>
     </header>
 
-<main class="container">
-  <div class="notes-grid" id="notesContainer">
-  </div>
-</main>
+    <main class="container">
+        <div class="notes-grid" id="notesContainer">
+        </div>
+    </main>
 
     <!-- ===========================================
      NOTE PREVIEW MODAL
 =========================================== -->
 
-<div id="notePreviewModal" class="note-preview-modal">
+    <div id="notePreviewModal" class="note-preview-modal">
 
-    <div class="note-preview-container">
+        <div class="note-preview-container">
 
-        <!-- Header -->
-        <div class="preview-header">
+            <!-- Header -->
+            <div class="preview-header">
 
-            <div class="preview-title">
-                <h2 id="previewTitle">DBMS Unit 4 Notes</h2>
-                <span id="previewSubject">Database Management System</span>
-            </div>
+                <div class="preview-title">
+                    <h2 id="previewTitle">DBMS Unit 4 Notes</h2>
+                    <span id="previewSubject">Database Management System</span>
+                </div>
 
-            <button id="closePreview" class="close-preview">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-
-        </div>
-
-        <!-- Body -->
-        <div class="preview-body">
-
-            <!-- LEFT -->
-            <div class="pdf-section">
-
-                <iframe
-                    id="previewFrame"
-                    src=""
-                    frameborder="0">
-                </iframe>
+                <button id="closePreview" class="close-preview">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
 
             </div>
 
-            <!-- RIGHT -->
-            <aside class="preview-sidebar">
+            <!-- Body -->
+            <div class="preview-body">
 
-                <!-- Uploader -->
-                <div class="sidebar-card">
+                <!-- LEFT -->
+                <div class="pdf-section">
 
-                    <h4>Uploaded By</h4>
+                    <iframe id="previewFrame" src="" frameborder="0">
+                    </iframe>
 
-                    <div class="uploader-box">
+                </div>
 
-                        <div class="avatar">
-                            <i class="fa-solid fa-user"></i>
-                        </div>
+                <!-- RIGHT -->
+                <aside class="preview-sidebar">
 
-                        <div>
-                            <h3 id="previewUploader">
-                                Ash
-                            </h3>
+                    <!-- Uploader -->
+                    <div class="sidebar-card">
 
-                            <span id="previewDate">
-                                29 July 2026
-                            </span>
+                        <h4>Uploaded By</h4>
+
+                        <div class="uploader-box">
+
+                            <div class="avatar">
+                                <i class="fa-solid fa-user"></i>
+                            </div>
+
+                            <div>
+                                <h3 id="previewUploader">
+                                    Ash
+                                </h3>
+
+                                <span id="previewDate">
+                                    29 July 2026
+                                </span>
+
+                            </div>
 
                         </div>
 
                     </div>
 
-                </div>
+                    <!-- Stats -->
+                    <div class="sidebar-card">
 
-                <!-- Stats -->
-                <div class="sidebar-card">
+                        <h4>Statistics</h4>
 
-                    <h4>Statistics</h4>
+                        <div class="stats-grid">
 
-                    <div class="stats-grid">
+                            <div class="stat-box">
+                                <i class="fa-regular fa-eye"></i>
+                                <span id="previewViews">125</span>
+                                <small>Views</small>
+                            </div>
 
-                        <div class="stat-box">
-                            <i class="fa-regular fa-eye"></i>
-                            <span id="previewViews">125</span>
-                            <small>Views</small>
+                            <div class="stat-box">
+                                <i class="fa-regular fa-eye"></i>
+                                <span id="previewDownloads">125</span>
+                                <small>Downloads</small>
+                            </div>
+
+
+                            <div class="stat-box">
+                                <i class="fa-solid fa-heart"></i>
+                                <span id="previewLikes">42</span>
+                                <small>Likes</small>
+                            </div>
+
                         </div>
 
-                        <div class="stat-box">
-                            <i class="fa-regular fa-eye"></i>
-                            <span id="previewDownloads">125</span>
-                            <small>Downloads</small>
-                        </div>
-                        
+                    </div>
 
-                        <div class="stat-box">
+                    <!-- Details -->
+                    <div class="sidebar-card">
+
+                        <h4>Details</h4>
+
+                        <div class="detail-item">
+                            <span>Branch</span>
+                            <strong id="previewBranch">Computer Engineering</strong>
+                        </div>
+
+                        <div class="detail-item">
+                            <span>Semester</span>
+                            <strong id="previewSemester">4</strong>
+                        </div>
+
+                        <div class="detail-item">
+                            <span>Subject</span>
+                            <strong id="previewSubject2">DBMS</strong>
+                        </div>
+
+                        <div class="detail-item">
+                            <span>College / University</span>
+                            <strong id="previewCollege">-</strong>
+                        </div>
+
+                    </div>
+
+                    <!-- Description -->
+                    <div class="sidebar-card">
+
+                        <h4>Description</h4>
+
+                        <p id="previewDescription">
+
+                            Complete DBMS Unit 4 Notes covering SQL,
+                            PL/SQL, Transactions and Normalization.
+
+                        </p>
+
+                    </div>
+
+                    <!-- Buttons -->
+                    <div class="sidebar-actions">
+
+                        <button id="likeBtn" class="like-btn">
+
                             <i class="fa-solid fa-heart"></i>
-                            <span id="previewLikes">42</span>
-                            <small>Likes</small>
-                        </div>
+
+                            Like
+
+                        </button>
+
+                        <button id="downloadBtn" class="download-btn">
+
+                            <i class="fa-solid fa-download"></i>
+
+                            Download PDF
+
+                        </button>
 
                     </div>
 
-                </div>
+                </aside>
 
-                <!-- Details -->
-                <div class="sidebar-card">
-
-                    <h4>Details</h4>
-
-                    <div class="detail-item">
-                        <span>Branch</span>
-                        <strong id="previewBranch">Computer Engineering</strong>
-                    </div>
-
-                    <div class="detail-item">
-                        <span>Semester</span>
-                        <strong id="previewSemester">4</strong>
-                    </div>
-
-                    <div class="detail-item">
-                        <span>Subject</span>
-                        <strong id="previewSubject2">DBMS</strong>
-                    </div>
-
-                </div>
-
-                <!-- Description -->
-                <div class="sidebar-card">
-
-                    <h4>Description</h4>
-
-                    <p id="previewDescription">
-
-                        Complete DBMS Unit 4 Notes covering SQL,
-                        PL/SQL, Transactions and Normalization.
-
-                    </p>
-
-                </div>
-
-                <!-- Buttons -->
-                <div class="sidebar-actions">
-
-                    <button id="likeBtn" class="like-btn">
-
-                        <i class="fa-solid fa-heart"></i>
-
-                        Like
-
-                    </button>
-
-                    <button id="downloadBtn" class="download-btn">
-
-                        <i class="fa-solid fa-download"></i>
-
-                        Download PDF
-
-                    </button>
-
-                </div>
-
-            </aside>
+            </div>
 
         </div>
 
     </div>
 
-</div>
 
 
-        
     </main>
     <script type="module" src="/js/notes.js"></script>
     <script type="module" src="../js/auth-state.js"></script>

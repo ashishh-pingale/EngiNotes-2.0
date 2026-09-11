@@ -11,12 +11,11 @@
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <!-- Google Fonts -->
-     <link rel="stylesheet" href="/css/theme.css">
+    <link rel="stylesheet" href="/css/theme.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-    <link
-        href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap"
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
 
     <!-- Styles -->
@@ -46,72 +45,60 @@
             <li><a href="/main/chat.html">Chat</a></li>
             <li><a href="/main/upload.html" class="active">Upload</a></li>
             <li id="adminLink" class="hidden">
-            <a href="/admin/html/admin.html">Admin</a></li>
-            
-                    
-                
+                <a href="/admin/html/admin.html">Admin</a>
+            </li>
+
+
+
             </li>
 
         </ul>
 
-<div class="nav-auth">
+        <div class="nav-auth">
 
-    <!-- Notification -->
-    <div class="notification-wrapper">
+            <!-- Notification -->
+            <div class="notification-wrapper">
 
-        <button
-            class="notification-btn"
-            id="notificationBtn"
-            aria-label="Notifications"
-        >
-            🔔
+                <button class="notification-btn" id="notificationBtn" aria-label="Notifications">
+                    🔔
 
-            <span
-                class="notification-badge hidden"
-                id="notificationBadge"
-            >
-                0
-            </span>
-        </button>
+                    <span class="notification-badge hidden" id="notificationBadge">
+                        0
+                    </span>
+                </button>
 
-        <div
-            class="notification-dropdown"
-            id="notificationDropdown"
-        >
+                <div class="notification-dropdown" id="notificationDropdown">
 
-            <div class="notification-header">
-                <h3>Notifications</h3>
+                    <div class="notification-header">
+                        <h3>Notifications</h3>
+                    </div>
+
+                    <div class="notification-list" id="notificationList">
+                        <p class="notification-empty">
+                            No notifications yet.
+                        </p>
+                    </div>
+
+                </div>
+
             </div>
 
-            <div
-                class="notification-list"
-                id="notificationList"
-            >
-                <p class="notification-empty">
-                    No notifications yet.
-                </p>
+            <!-- Auth controls -->
+            <div id="authSection">
+
+                <span class="auth-loading">...</span>
+
+                <button class="btn-secondary">
+                    Sign In
+                </button>
+
+                <button class="btn-primary">
+                    Sign Up
+                </button>
+
             </div>
 
         </div>
-
-    </div>
-
-    <!-- Auth controls -->
-    <div id="authSection">
-
-        <span class="auth-loading">...</span>
-
-        <button class="btn-secondary">
-            Sign In
-        </button>
-
-        <button class="btn-primary">
-            Sign Up
-        </button>
-
-    </div>
-
-</div>
 
     </nav>
 
@@ -160,47 +147,30 @@
                             Only PDF files accepted
                         </p>
 
-                        <input
-                            type="file"
-                            id="fileInput"
-                            class="file-input"
-                            accept="application/pdf">
+                        <input type="file" id="fileInput" class="file-input" accept="application/pdf">
 
                         <!-- Selected File -->
 
-                        <div
-                            class="selected-file-badge"
-                            id="fileBadge">
+                        <div class="selected-file-badge" id="fileBadge">
 
-                            <i
-                                data-lucide="file-text"
-                                size="20"
-                                style="color: var(--primary)">
+                            <i data-lucide="file-text" size="20" style="color: var(--primary)">
                             </i>
 
                             <div class="file-info">
 
-                                <span
-                                    class="file-name"
-                                    id="fileName">
+                                <span class="file-name" id="fileName">
                                     notes.pdf
                                 </span>
 
-                                <span
-                                    class="file-size"
-                                    id="fileSize">
+                                <span class="file-size" id="fileSize">
                                     0 KB
                                 </span>
 
                             </div>
 
-                            <button
-                                type="button"
-                                class="remove-file-btn">
+                            <button type="button" class="remove-file-btn">
 
-                                <i
-                                    data-lucide="x"
-                                    size="16">
+                                <i data-lucide="x" size="16">
                                 </i>
 
                             </button>
@@ -221,12 +191,7 @@
                         Title
                     </label>
 
-                    <input
-                        type="text"
-                        id="title"
-                        class="input-field"
-                        placeholder="Enter note title"
-                        required>
+                    <input type="text" id="title" class="input-field" placeholder="Enter note title" required>
 
                 </div>
 
@@ -242,11 +207,24 @@
 
                     </label>
 
-                    <textarea
-                        id="description"
-                        class="textarea-field"
+                    <textarea id="description" class="textarea-field"
                         placeholder="Brief description about the notes (optional)">
                     </textarea>
+
+                </div>
+
+                <!-- ========================= -->
+                <!-- College / University -->
+                <!-- ========================= -->
+
+                <div class="form-group">
+
+                    <label for="college">
+                        College / University
+                    </label>
+
+                    <input type="text" id="college" class="input-field" placeholder="Enter the college or university"
+                        autocomplete="organization" required>
 
                 </div>
 
@@ -262,10 +240,7 @@
                             Branch
                         </label>
 
-                        <select
-                            id="branch"
-                            class="select-field"
-                            required>
+                        <select id="branch" class="select-field" required>
 
                             <option value="" disabled selected>
                                 Select Branch
@@ -292,10 +267,7 @@
 
                         </label>
 
-                        <select
-                            id="year"
-                            class="select-field"
-                            required>
+                        <select id="year" class="select-field" required>
 
                             <option value="" disabled selected>
                                 Select Year
@@ -326,10 +298,7 @@
 
                         </label>
 
-                        <select
-                            id="semester"
-                            class="select-field"
-                            required>
+                        <select id="semester" class="select-field" required>
 
                             <option value="" disabled selected>
                                 Select Semester
@@ -356,12 +325,7 @@
 
                         </label>
 
-                        <input
-                            type="text"
-                            id="subject"
-                            class="input-field"
-                            placeholder="e.g. Data Structures"
-                            required>
+                        <input type="text" id="subject" class="input-field" placeholder="e.g. Data Structures" required>
 
                     </div>
 
@@ -388,15 +352,9 @@
                 <!-- Submit -->
                 <!-- ========================= -->
 
-                <button
-                    type="submit"
-                    class="btn-submit"
-                    id="uploadBtn">
+                <button type="submit" class="btn-submit" id="uploadBtn">
 
-                    <i
-                        data-lucide="upload"
-                        id="uploadIcon"
-                        size="20">
+                    <i data-lucide="upload" id="uploadIcon" size="20">
                     </i>
 
                     <span id="uploadBtnText">
@@ -449,20 +407,12 @@
     <!-- Success Modal -->
     <!-- ===================================================== -->
 
-    <div
-        class="modal-overlay"
-        id="successModal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="successTitle"
-        aria-describedby="successMessage"
-        aria-hidden="true">
+    <div class="modal-overlay" id="successModal" role="dialog" aria-modal="true" aria-labelledby="successTitle"
+        aria-describedby="successMessage" aria-hidden="true">
 
         <div class="modal">
 
-            <button
-                class="modal-close"
-                id="successCloseBtn">
+            <button class="modal-close" id="successCloseBtn">
 
                 <i data-lucide="x"></i>
 
@@ -470,24 +420,18 @@
 
             <div class="modal-icon success">
 
-                <i
-                    data-lucide="badge-check"
-                    size="56">
+                <i data-lucide="badge-check" size="56">
                 </i>
 
             </div>
 
-            <h2
-                class="modal-title"
-                id="successTitle">
+            <h2 class="modal-title" id="successTitle">
 
                 🎉 Note Submitted Successfully!
 
             </h2>
 
-            <p
-                class="modal-message"
-                id="successMessage">
+            <p class="modal-message" id="successMessage">
 
                 Your note has been submitted successfully and is now
                 pending admin review.
@@ -499,22 +443,16 @@
 
             <div class="modal-actions">
 
-                <button
-                    class="modal-btn primary"
-                    id="uploadAnotherBtn">
+                <button class="modal-btn primary" id="uploadAnotherBtn">
 
-                    <i
-                        data-lucide="upload-cloud"
-                        size="18">
+                    <i data-lucide="upload-cloud" size="18">
                     </i>
 
                     Upload Another
 
                 </button>
 
-                <button
-                    class="modal-btn secondary"
-                    id="browseNotesBtn">
+                <button class="modal-btn secondary" id="browseNotesBtn">
 
                     Browse Notes
 
@@ -530,20 +468,12 @@
     <!-- Error Modal -->
     <!-- ===================================================== -->
 
-    <div
-        class="modal-overlay"
-        id="errorModal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="errorTitle"
-        aria-describedby="errorMessage"
-        aria-hidden="true">
+    <div class="modal-overlay" id="errorModal" role="dialog" aria-modal="true" aria-labelledby="errorTitle"
+        aria-describedby="errorMessage" aria-hidden="true">
 
         <div class="modal error-modal">
 
-            <button
-                class="modal-close"
-                id="errorCloseBtn">
+            <button class="modal-close" id="errorCloseBtn">
 
                 <i data-lucide="x"></i>
 
@@ -551,24 +481,18 @@
 
             <div class="modal-icon error">
 
-                <i
-                    data-lucide="circle-x"
-                    size="56">
+                <i data-lucide="circle-x" size="56">
                 </i>
 
             </div>
 
-            <h2
-                class="modal-title"
-                id="errorTitle">
+            <h2 class="modal-title" id="errorTitle">
 
                 Upload Failed
 
             </h2>
 
-            <p
-                class="modal-message"
-                id="errorMessage">
+            <p class="modal-message" id="errorMessage">
 
                 Something went wrong while uploading your note.
 
@@ -578,17 +502,13 @@
 
             <div class="modal-actions">
 
-                <button
-                    class="modal-btn primary"
-                    id="retryUploadBtn">
+                <button class="modal-btn primary" id="retryUploadBtn">
 
                     Try Again
 
                 </button>
 
-                <button
-                    class="modal-btn secondary"
-                    id="cancelUploadBtn">
+                <button class="modal-btn secondary" id="cancelUploadBtn">
 
                     Cancel
 

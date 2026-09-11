@@ -92,6 +92,9 @@ const previewBranch =
 const previewSemester =
     document.getElementById("previewSemester");
 
+const previewCollege =
+    document.getElementById("previewCollege");
+
 const previewDescription =
     document.getElementById("previewDescription");
 
@@ -240,40 +243,35 @@ async function fetchNotes() {
                     card.innerHTML = `
 
                         <span class="branch-badge">
-                            ${
-                                note.branch ||
-                                "General"
-                            }
+                            ${note.branch ||
+                        "General"
+                        }
                         </span>
 
 
                         <h3>
-                            ${
-                                note.title ||
-                                "Untitled Note"
-                            }
+                            ${note.title ||
+                        "Untitled Note"
+                        }
                         </h3>
 
 
                         <p class="subject-code">
 
-                            ${
-                                note.subject ||
-                                "Unknown Subject"
-                            }
+                            ${note.subject ||
+                        "Unknown Subject"
+                        }
 
                             •
-                            ${
-                                getYearText(
-                                    note.year
-                                )
-                            }
+                            ${getYearText(
+                            note.year
+                        )
+                        }
 
                             • Semester
-                            ${
-                                note.semester ||
-                                "-"
-                            }
+                            ${note.semester ||
+                        "-"
+                        }
 
                         </p>
 
@@ -282,14 +280,13 @@ async function fetchNotes() {
 
                             <div class="avatar">
 
-                                ${
-                                    (
-                                        note.uploaderName ||
-                                        "U"
-                                    )
-                                    .charAt(0)
-                                    .toUpperCase()
-                                }
+                                ${(
+                            note.uploaderName ||
+                            "U"
+                        )
+                            .charAt(0)
+                            .toUpperCase()
+                        }
 
                             </div>
 
@@ -299,10 +296,9 @@ async function fetchNotes() {
                                 Uploaded by
 
                                 <strong>
-                                    ${
-                                        note.uploaderName ||
-                                        "Unknown"
-                                    }
+                                    ${note.uploaderName ||
+                        "Unknown"
+                        }
                                 </strong>
 
                             </span>
@@ -637,6 +633,9 @@ async function openPreview(
     previewSemester.textContent =
         note.semester || "-";
 
+    previewCollege.textContent =
+        note.college || "-";
+
 
     previewDescription.textContent =
         note.description || "No description available.";
@@ -905,7 +904,7 @@ likeBtn.addEventListener(
                 if (
                     currentPreviewNote.uploaderId &&
                     currentPreviewNote.uploaderId !==
-                        currentUser.uid
+                    currentUser.uid
                 ) {
 
                     try {
@@ -1010,7 +1009,7 @@ function getYearText(
 ) {
 
     switch (
-        String(year)
+    String(year)
     ) {
 
         case "1":
