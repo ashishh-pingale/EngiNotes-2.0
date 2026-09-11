@@ -29,6 +29,9 @@ const profileForm =
 const nameInput =
     document.getElementById("profileNameInput");
 
+const collegeInput =
+    document.getElementById("profileCollegeInput");
+
 const branchInput =
     document.getElementById("profileBranchInput");
 
@@ -129,6 +132,9 @@ async function loadProfile() {
         nameInput.value =
             data.name || "";
 
+        collegeInput.value =
+            data.college || "";
+
         branchInput.value =
             data.branch || "";
 
@@ -160,8 +166,8 @@ async function loadProfile() {
 
             profilePicturePreview.textContent =
                 (data.name || "U")
-                .charAt(0)
-                .toUpperCase();
+                    .charAt(0)
+                    .toUpperCase();
 
         }
 
@@ -288,7 +294,7 @@ async function uploadProfilePicture(file) {
     formData.append(
         "upload_preset",
         PROFILE_UPLOAD_PRESET
-);
+    );
 
 
 
@@ -352,6 +358,9 @@ profileForm.addEventListener(
         const name =
             nameInput.value.trim();
 
+        const college =
+            collegeInput.value.trim();
+
         const branch =
             branchInput.value;
 
@@ -370,6 +379,18 @@ profileForm.addEventListener(
 
             formMessage.textContent =
                 "Please enter your name.";
+
+            formMessage.className =
+                "form-message error";
+
+            return;
+
+        }
+
+        if (!college) {
+
+            formMessage.textContent =
+                "Please enter your college or university.";
 
             formMessage.className =
                 "form-message error";
@@ -441,6 +462,8 @@ profileForm.addEventListener(
             const updateData = {
 
                 name: name,
+                
+                college: college,
 
                 branch: branch,
 

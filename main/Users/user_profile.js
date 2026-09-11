@@ -16,12 +16,12 @@ import {
     deleteDoc,
     serverTimestamp
 }
-from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 import {
     onAuthStateChanged
 }
-from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 
 /* ===========================================================
@@ -37,11 +37,20 @@ const profileAvatar =
 const profileName =
     document.getElementById("profileName");
 
+const aboutCollege =
+    document.getElementById("aboutCollege");
+
 const profileBranch =
     document.getElementById("profileBranch");
 
 const profileYear =
     document.getElementById("profileYear");
+
+const aboutBranch =
+    document.getElementById("aboutBranch");
+
+const aboutYear =
+    document.getElementById("aboutYear");
 
 const profileJoined =
     document.getElementById("profileJoined");
@@ -267,6 +276,16 @@ async function loadUserProfile() {
         profileYear.textContent =
             profileUser.year ||
             "-";
+
+        aboutCollege.textContent =
+            profileUser.college ||
+            "-";
+
+        aboutBranch.textContent =
+            profileUser.branch || "-";
+
+        aboutYear.textContent =
+            profileUser.year || "-";
 
 
         profileBio.textContent =
@@ -619,10 +638,9 @@ function renderRecentUploads() {
                     </h3>
 
                     <span>
-                        ${
-                            note.subject ||
-                            "Unknown Subject"
-                        }
+                        ${note.subject ||
+                "Unknown Subject"
+                }
                     </span>
 
                 </div>
@@ -1150,24 +1168,22 @@ async function openSocialModal(type) {
 
                     <strong>
 
-                        No ${
-                            isFollowers
-                                ? "followers"
-                                : "following"
-                        } yet
+                        No ${isFollowers
+                    ? "followers"
+                    : "following"
+                } yet
 
                     </strong>
 
                     <span>
 
-                        ${
-                            isFollowers
+                        ${isFollowers
 
-                                ? "People who connect with this user will appear here."
+                    ? "People who connect with this user will appear here."
 
-                                : "People this user connects with will appear here."
+                    : "People this user connects with will appear here."
 
-                        }
+                }
 
                     </span>
 
@@ -1315,10 +1331,9 @@ async function openSocialModal(type) {
                         class="social-user-avatar"
                     >
 
-                        ${
-                            user.profileImage
+                        ${user.profileImage
 
-                                ? `
+                        ? `
 
                                     <img
                                         src="${user.profileImage}"
@@ -1327,8 +1342,8 @@ async function openSocialModal(type) {
 
                                   `
 
-                                : initial
-                        }
+                        : initial
+                    }
 
                     </div>
 
@@ -1350,19 +1365,17 @@ async function openSocialModal(type) {
                             class="social-user-meta"
                         >
 
-                            ${
-                                user.branch ||
-                                "Engineering"
-                            }
+                            ${user.branch ||
+                    "Engineering"
+                    }
 
-                            ${
-                                user.year
+                            ${user.year
 
-                                    ? ` • ${user.year}`
+                        ? ` • ${user.year}`
 
-                                    : ""
+                        : ""
 
-                            }
+                    }
 
                         </div>
 

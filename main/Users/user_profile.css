@@ -560,6 +560,22 @@ body {
     font-size: 12px;
 }
 
+.profile-details .detail-item {
+    display: grid;
+    grid-template-columns: 130px 1fr;
+    align-items: start;
+    column-gap: 14px;
+}
+
+.profile-details .detail-label {
+    margin: 0;
+}
+
+.profile-details .detail-item strong {
+    margin: 0;
+    text-align: left;
+    line-height: 1.4;
+}
 
 /* =========================================
    UPLOADS
