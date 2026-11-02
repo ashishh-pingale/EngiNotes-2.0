@@ -1,0 +1,273 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // =====================================================
+    // HELPER FUNCTIONS
+    // =====================================================
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
+    }
+
+    // =====================================================
+    // USERS COLLECTION
+    // =====================================================
+
+    match /users/{userId} {
+      // User profiles are publicly readable (for author avatars, bio, community)
+      allow read: if true;
+
+      // User creates their own profile document on sign-up
+      // Must start with role == "user"
+      allow create: if isSignedIn() &&
+        request.auth.uid == userId &&
+        (
+          !('role' in request.resource.data) ||
+          request.resource.data.role == "user"
+        );
+
+      // User can update their own profile (cannot escalate their own role to admin)
+      // Admins can update any user's profile/role
+      allow update: if isSignedIn() &&
+        (
+          isAdmin() ||
+          (
+            request.auth.uid == userId &&
+            (
+              !('role' in request.resource.data) ||
+              request.resource.data.role == resource.data.role
+            )
+          )
+        );
+
+      // Only admins can delete user documents
+      allow delete: if isAdmin();
+    }
+
+    // =====================================================
+    // NOTES COLLECTION
+    // =====================================================
+
+    match /notes/{noteId} {
+      // Notes are publicly readable (approved notes and browse pages)
+      allow read: if true;
+
+      // Authenticated users can upload notes
+      allow create: if isSignedIn() &&
+        (
+          !('uploaderId' in request.resource.data) ||
+          request.resource.data.uploaderId == request.auth.uid ||
+          request.resource.data.uploaderId == "anonymous"
+        );
+
+      // Note update permissions:
+      // 1. Admins can update any field (approve, reject, moderate)
+      // 2. Original uploader can edit their own note
+      // 3. Any logged-in user can increment engagement counters (views, downloads, likes)
+      allow update: if
+        (
+          isSignedIn() &&
+          (
+            isAdmin() ||
+            (
+              'uploaderId' in resource.data &&
+              request.auth.uid == resource.data.uploaderId
+            )
+          )
+        ) ||
+        (
+          isSignedIn() &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            "views",
+            "downloads",
+            "likes"
+          ])
+        );
+
+      // Only the uploader or an admin can delete notes
+      allow delete: if isSignedIn() &&
+        (
+          isAdmin() ||
+          (
+            'uploaderId' in resource.data &&
+            request.auth.uid == resource.data.uploaderId
+          )
+        );
+
+      // Subcollection likes: /notes/{noteId}/likes/{userId}
+      match /likes/{userId} {
+        allow read: if isSignedIn();
+        allow create, update: if isSignedIn() && request.auth.uid == userId;
+        allow delete: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      }
+    }
+
+    // =====================================================
+    // NOTE LIKES COLLECTION
+    // =====================================================
+
+    match /noteLikes/{likeId} {
+      allow read: if isSignedIn();
+
+      // Users can only record likes under their own UID
+      allow create, update: if isSignedIn() &&
+        request.auth.uid == request.resource.data.userId;
+
+      // Users can remove their own likes, or admin can moderate
+      allow delete: if isSignedIn() &&
+        (
+          request.auth.uid == resource.data.userId ||
+          isAdmin()
+        );
+    }
+
+    // =====================================================
+    // BOOKMARKS COLLECTION
+    // =====================================================
+
+    match /bookmarks/{bookmarkId} {
+      // User can read their own bookmarks
+      allow read: if isSignedIn() &&
+        (
+          !('userId' in resource.data) ||
+          request.auth.uid == resource.data.userId
+        );
+
+      // User can create/update bookmark under their own UID
+      allow create, update: if isSignedIn() &&
+        request.auth.uid == request.resource.data.userId;
+
+      // User can remove their own bookmark
+      allow delete: if isSignedIn() &&
+        request.auth.uid == resource.data.userId;
+    }
+
+    // =====================================================
+    // NOTIFICATIONS COLLECTION
+    // =====================================================
+
+    match /notifications/{notificationId} {
+      // Recipient can read their own notifications (supports both 'userId' and 'recipientId')
+      allow read: if isSignedIn() &&
+        (
+          ('userId' in resource.data && request.auth.uid == resource.data.userId) ||
+          ('recipientId' in resource.data && request.auth.uid == resource.data.recipientId)
+        );
+
+      // Authenticated users (senders) and Admins can create notifications
+      allow create: if isSignedIn();
+
+      // Recipient can mark notification as read (update read status)
+      allow update: if isSignedIn() &&
+        (
+          ('userId' in resource.data && request.auth.uid == resource.data.userId) ||
+          ('recipientId' in resource.data && request.auth.uid == resource.data.recipientId) ||
+          isAdmin()
+        );
+
+      // Recipient or admin can delete notification
+      allow delete: if isSignedIn() &&
+        (
+          ('userId' in resource.data && request.auth.uid == resource.data.userId) ||
+          ('recipientId' in resource.data && request.auth.uid == resource.data.recipientId) ||
+          isAdmin()
+        );
+    }
+
+    // =====================================================
+    // CHATS COLLECTION
+    // =====================================================
+
+    match /chats/{chatId} {
+      // Authenticated users can read chat messages
+      allow read: if isSignedIn();
+
+      // Sender must be the currently logged-in user
+      allow create: if isSignedIn() &&
+        request.auth.uid == request.resource.data.senderId;
+
+      // Sender or Admin can delete messages
+      allow delete: if isSignedIn() &&
+        (
+          request.auth.uid == resource.data.senderId ||
+          isAdmin()
+        );
+    }
+
+    // =====================================================
+    // FOLLOWS COLLECTION
+    // =====================================================
+
+    match /follows/{docId} {
+      // Authenticated users can view connections
+      allow read: if isSignedIn();
+
+      // User can only follow as themselves
+      allow create: if isSignedIn() &&
+        request.auth.uid == request.resource.data.followerId;
+
+      // User can unfollow, or admin can moderate
+      allow delete: if isSignedIn() &&
+        (
+          request.auth.uid == resource.data.followerId ||
+          isAdmin()
+        );
+    }
+
+    // =====================================================
+    // REVIEWS COLLECTION
+    // =====================================================
+
+    match /reviews/{reviewId} {
+      // Reviews are publicly visible
+      allow read: if true;
+
+      // Authenticated users can write a review
+      allow create: if isSignedIn();
+
+      // Only the review author or admin can update/delete
+      allow update, delete: if isSignedIn() &&
+        (
+          ('authorId' in resource.data && request.auth.uid == resource.data.authorId) ||
+          isAdmin()
+        );
+    }
+
+    // =====================================================
+    // CONTACT MESSAGES COLLECTION
+    // =====================================================
+
+    match /contactMessages/{messageId} {
+      // Anyone (including prospective students/visitors not logged in) can submit contact form
+      allow create: if request.resource.data.name is string &&
+        request.resource.data.email is string &&
+        request.resource.data.message is string &&
+        request.resource.data.name.size() >= 2 &&
+        request.resource.data.name.size() <= 100 &&
+        request.resource.data.email.size() >= 5 &&
+        request.resource.data.email.size() <= 150 &&
+        request.resource.data.message.size() >= 5 &&
+        request.resource.data.message.size() <= 3000;
+
+      // Only admins can view, update (mark resolved), or delete contact messages
+      allow read, update, delete: if isAdmin();
+    }
+
+    // =====================================================
+    // DEFAULT DENY
+    // =====================================================
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
