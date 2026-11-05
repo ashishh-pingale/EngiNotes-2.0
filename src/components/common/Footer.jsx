@@ -43,8 +43,8 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link to="/chat" className="hover:text-white transition-colors">
-                  Community Chat
+                <Link to="/reviews" className="hover:text-white transition-colors">
+                  Student Reviews
                 </Link>
               </li>
             </ul>

@@ -16,7 +16,7 @@ import {
   Search,
   UserPlus,
   UserCheck,
-  MessageSquare,
+  User,
   GraduationCap,
   Users,
   Trophy,
@@ -334,12 +334,12 @@ export default function DiscoverPage() {
                     )}
                   </button>
 
-                  <button
-                    onClick={() => navigate(`/chat?uid=${user.id}`)}
+                  <Link
+                    to={`/profile/${user.id}`}
                     className="py-2 px-3 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                   >
-                    <MessageSquare className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" /> Message
-                  </button>
+                    <User className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" /> Profile
+                  </Link>
                 </div>
               </div>
             );

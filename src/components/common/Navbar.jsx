@@ -57,7 +57,6 @@ export default function Navbar() {
     { name: "Discover", path: "/discover" },
     { name: "About Us", path: "/about" },
     { name: "Contact", path: "/contact" },
-    { name: "Chat", path: "/chat", protected: true },
     { name: "Upload", path: "/upload", protected: true }
   ];
 
@@ -152,10 +151,10 @@ export default function Navbar() {
                             key={notif.id}
                             onClick={() => {
                               markAsRead(notif.id);
-                              if (notif.type === "message") {
-                                navigate(`/chat?uid=${notif.senderId || ""}`);
-                              } else if (notif.noteId) {
+                              if (notif.noteId) {
                                 navigate(`/notes/${notif.noteId}`);
+                              } else if (notif.senderId) {
+                                navigate(`/profile/${notif.senderId}`);
                               }
                               setNotificationOpen(false);
                             }}

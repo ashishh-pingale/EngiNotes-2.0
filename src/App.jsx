@@ -18,7 +18,6 @@ import HomePage from "./pages/HomePage";
 const BrowsePage = lazy(() => import("./pages/BrowsePage"));
 const NoteDetailsPage = lazy(() => import("./pages/NoteDetailsPage"));
 const UploadPage = lazy(() => import("./pages/UploadPage"));
-const ChatPage = lazy(() => import("./pages/ChatPage"));
 const DiscoverPage = lazy(() => import("./pages/DiscoverPage"));
 const AboutPage = lazy(() => import("./pages/AboutPage"));
 const ContactPage = lazy(() => import("./pages/ContactPage"));
@@ -71,7 +70,6 @@ export default function App() {
 
                       {/* Protected Actions */}
                       <Route path="/upload" element={<ProtectedRoute><UploadPage /></ProtectedRoute>} />
-                      <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
 
                       {/* Admin Protected Routes */}
                       <Route path="/admin" element={<AdminRoute><AdminDashboardPage /></AdminRoute>} />

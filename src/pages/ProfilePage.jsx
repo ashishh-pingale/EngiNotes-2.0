@@ -330,12 +330,6 @@ export default function ProfilePage() {
                         </>
                       )}
                     </button>
-                    <button
-                      onClick={() => navigate(`/chat?uid=${profileUid}`)}
-                      className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition-colors"
-                    >
-                      <MessageSquare className="w-4 h-4 text-blue-600 dark:text-blue-400" /> Message
-                    </button>
                   </>
                 )}
               </div>
@@ -629,18 +623,6 @@ export default function ProfilePage() {
                     >
                       View
                     </button>
-                    {currentUser && currentUser.uid !== u.id && (
-                      <button
-                        onClick={() => {
-                          setFollowModalOpen(false);
-                          navigate(`/chat?uid=${u.id}`);
-                        }}
-                        className="p-2 rounded-xl border border-blue-200 dark:border-blue-900/60 bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 dark:hover:text-white transition-all cursor-pointer shadow-xs"
-                        title="Message student"
-                      >
-                        <MessageSquare className="w-4 h-4" />
-                      </button>
-                    )}
                   </div>
                 </div>
               );

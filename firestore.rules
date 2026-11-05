@@ -211,23 +211,11 @@ service cloud.firestore {
     }
 
     // =====================================================
-    // CHATS COLLECTION
+    // CHATS COLLECTION (Archived - Disabled)
     // =====================================================
 
     match /chats/{chatId} {
-      // Authenticated users can read chat messages
-      allow read: if isSignedIn();
-
-      // Sender must be the currently logged-in user
-      allow create: if isSignedIn() &&
-        request.auth.uid == request.resource.data.senderId;
-
-      // Sender or Admin can delete messages
-      allow delete: if isSignedIn() &&
-        (
-          request.auth.uid == resource.data.senderId ||
-          isAdmin()
-        );
+      allow read, write: if isAdmin();
     }
 
     // =====================================================
