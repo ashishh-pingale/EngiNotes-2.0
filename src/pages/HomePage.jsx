@@ -24,6 +24,7 @@ import {
   MessageSquarePlus
 } from "lucide-react";
 import { getHomePageMetrics, getCachedHomePageMetrics } from "../services/homeService";
+import { getOptimizedImageUrl } from "../utils/imageUtils";
 import AddReviewModal from "../components/reviews/AddReviewModal";
 
 const baseBranches = [
@@ -133,7 +134,7 @@ export default function HomePage() {
       <section className="relative overflow-hidden pt-12 md:pt-20 lg:pt-28">
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_80%_60%_at_50%_-20%,rgba(59,130,246,0.15),transparent)]" />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-8">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 dark:bg-blue-950/60 border border-blue-200/60 dark:border-blue-900 text-blue-700 dark:text-blue-300 text-xs sm:text-sm font-semibold shadow-sm animate-pulse">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 dark:bg-blue-950/60 border border-blue-200/60 dark:border-blue-900 text-blue-700 dark:text-blue-300 text-xs sm:text-sm font-semibold shadow-sm">
             <Sparkles className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             Empowering {metrics ? `${metrics.usersCount || metrics.notesCount || 100}+` : "12,000+"} Engineering Students
           </div>
@@ -184,7 +185,7 @@ export default function HomePage() {
       </section>
 
       {/* Engineering Branches Grid with Live DB Counts */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 content-visibility-auto">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center space-y-3 mb-12">
           <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
             Browse By Engineering Branch
@@ -221,7 +222,7 @@ export default function HomePage() {
       </section>
 
       {/* Why Choose EngiNotes Features */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 content-visibility-auto">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="rounded-3xl bg-gradient-to-b from-slate-900 to-slate-950 text-white p-8 sm:p-12 lg:p-16 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
           <div className="max-w-2xl mb-12 space-y-3">
@@ -253,7 +254,7 @@ export default function HomePage() {
       </section>
 
       {/* Student Reviews & Feedback Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 content-visibility-auto">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header (Centered) */}
         <div className="text-center space-y-3 mb-12 max-w-2xl mx-auto">
           <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
@@ -327,8 +328,12 @@ export default function HomePage() {
                       {typeof (r.authorAvatar || r.avatar) === "string" &&
                         (r.authorAvatar || r.avatar).startsWith("http") ? (
                         <img
-                          src={r.authorAvatar || r.avatar}
-                          alt={r.authorName || r.author}
+                          src={getOptimizedImageUrl(r.authorAvatar || r.avatar, { width: 80, height: 80 })}
+                          alt={r.authorName || r.author || "Student"}
+                          loading="lazy"
+                          decoding="async"
+                          width="40"
+                          height="40"
                           className="w-full h-full object-cover"
                         />
                       ) : (

@@ -86,9 +86,3 @@
 .dark ::-webkit-scrollbar-thumb:hover {
   background: #475569;
 }
-
-/* Modern Performance: Content Visibility for off-screen sections */
-.content-visibility-auto {
-  content-visibility: auto;
-  contain-intrinsic-size: 1px 400px;
-}

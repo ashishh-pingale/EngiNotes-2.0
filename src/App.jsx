@@ -12,8 +12,9 @@ import ProtectedRoute from "./components/common/ProtectedRoute";
 import AdminRoute from "./components/common/AdminRoute";
 import LoadingSpinner from "./components/common/LoadingSpinner";
 
-// Route-Level Code Splitting (Dynamic Lazy Imports)
-const HomePage = lazy(() => import("./pages/HomePage"));
+import HomePage from "./pages/HomePage";
+
+// Route-Level Code Splitting (Dynamic Lazy Imports for Secondary Routes)
 const BrowsePage = lazy(() => import("./pages/BrowsePage"));
 const NoteDetailsPage = lazy(() => import("./pages/NoteDetailsPage"));
 const UploadPage = lazy(() => import("./pages/UploadPage"));
@@ -31,22 +32,22 @@ const AdminDashboardPage = lazy(() => import("./pages/AdminDashboardPage"));
 
 function PageLoadingFallback() {
   return (
-    <div className="min-h-[60vh] flex items-center justify-center">
-      <LoadingSpinner text="Loading study materials..." />
+    <div className="min-h-[85vh] flex items-center justify-center">
+      <LoadingSpinner text="Loading..." />
     </div>
   );
 }
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <ThemeProvider>
         <AuthProvider>
           <NotificationProvider>
             <ToastProvider>
               <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-[#090d16] text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300">
                 <Navbar />
-                <main className="flex-1">
+                <main className="flex-1 min-h-[calc(100vh-140px)]">
                   <Suspense fallback={<PageLoadingFallback />}>
                     <Routes>
                       {/* Public Routes */}

@@ -28,8 +28,7 @@ export function NotificationProvider({ children }) {
     try {
       const q = query(
         collection(db, "notifications"),
-        where("userId", "==", currentUser.uid),
-        orderBy("createdAt", "desc")
+        where("userId", "==", currentUser.uid)
       );
 
       const unsubscribe = onSnapshot(
@@ -39,6 +38,14 @@ export function NotificationProvider({ children }) {
             id: d.id,
             ...d.data()
           }));
+
+          // Sort descending by timestamp in memory (no composite Firestore index needed)
+          notifs.sort((a, b) => {
+            const tA = a.createdAt?.toMillis ? a.createdAt.toMillis() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+            const tB = b.createdAt?.toMillis ? b.createdAt.toMillis() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+            return tB - tA;
+          });
+
           setNotifications(notifs);
           setUnreadCount(notifs.filter((n) => !n.read).length);
         },

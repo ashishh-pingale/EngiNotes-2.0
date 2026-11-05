@@ -11,6 +11,7 @@ import {
   serverTimestamp
 } from "firebase/firestore";
 import LoadingSpinner from "../components/common/LoadingSpinner";
+import { UserCardSkeletonGrid, LeaderboardSkeleton } from "../components/common/Skeletons";
 import {
   Search,
   UserPlus,
@@ -24,6 +25,7 @@ import {
   FileText,
   Star
 } from "lucide-react";
+import { getOptimizedImageUrl } from "../utils/imageUtils";
 
 export default function DiscoverPage() {
   const { currentUser } = useAuth();
@@ -140,7 +142,7 @@ export default function DiscoverPage() {
   });
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 min-h-[calc(100vh-140px)]">
       {/* Title */}
       <div className="text-center max-w-2xl mx-auto space-y-3">
         <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">
@@ -152,7 +154,9 @@ export default function DiscoverPage() {
       </div>
 
       {/* Top Campus Contributors Leaderboard */}
-      {topContributors.length > 0 && (
+      {loading ? (
+        <LeaderboardSkeleton />
+      ) : topContributors.length > 0 ? (
         <div className="bg-gradient-to-br from-blue-50/80 via-white to-indigo-50/80 dark:from-slate-900/90 dark:via-slate-900/80 dark:to-indigo-950/30 rounded-3xl border border-blue-100/80 dark:border-slate-800 p-6 sm:p-7 shadow-sm space-y-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
@@ -200,7 +204,15 @@ export default function DiscoverPage() {
 
                   <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-bold text-sm flex items-center justify-center shrink-0 overflow-hidden shadow-2xs">
                     {c.profilePicture ? (
-                      <img src={c.profilePicture} alt={c.name} className="w-full h-full object-cover" />
+                      <img
+                        src={getOptimizedImageUrl(c.profilePicture, { width: 96, height: 96 })}
+                        alt={c.name}
+                        loading="lazy"
+                        decoding="async"
+                        width="48"
+                        height="48"
+                        className="w-full h-full object-cover"
+                      />
                     ) : (
                       (c.name || "U").charAt(0).toUpperCase()
                     )}
@@ -232,7 +244,7 @@ export default function DiscoverPage() {
             })}
           </div>
         </div>
-      )}
+      ) : null}
 
       {/* Search Bar */}
       <div className="max-w-xl mx-auto">
@@ -250,7 +262,7 @@ export default function DiscoverPage() {
 
       {/* User Cards Grid */}
       {loading ? (
-        <LoadingSpinner text="Finding contributors..." />
+        <UserCardSkeletonGrid count={8} />
       ) : filteredUsers.length === 0 ? (
         <div className="text-center py-16 bg-white dark:bg-slate-900/90 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 space-y-3">
           <Users className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-600" />
@@ -271,12 +283,16 @@ export default function DiscoverPage() {
               >
                 <div className="space-y-4 text-center">
                   {/* Avatar */}
-                  <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-extrabold text-2xl flex items-center justify-center mx-auto shadow-md ring-4 ring-blue-50 dark:ring-blue-950/40">
+                  <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-bold flex items-center justify-center mx-auto shadow-md ring-4 ring-blue-50 dark:ring-blue-950/40 overflow-hidden">
                     {user.profilePicture ? (
                       <img
-                        src={user.profilePicture}
+                        src={getOptimizedImageUrl(user.profilePicture, { width: 160, height: 160 })}
                         alt={user.name}
-                        className="w-full h-full rounded-full object-cover"
+                        loading="lazy"
+                        decoding="async"
+                        width="80"
+                        height="80"
+                        className="w-full h-full object-cover"
                       />
                     ) : (
                       user.name?.charAt(0)?.toUpperCase() || "U"

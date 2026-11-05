@@ -33,6 +33,7 @@ import {
   Download
 } from "lucide-react";
 import { fetchUserBookmarkedNotes } from "../services/bookmarkService";
+import { getOptimizedImageUrl } from "../utils/imageUtils";
 
 export default function ProfilePage() {
   const { uid: paramUid } = useParams();
@@ -202,7 +203,13 @@ export default function ProfilePage() {
     }
   }
 
-  if (loading) return <LoadingSpinner text="Loading user profile..." />;
+  if (loading) {
+    return (
+      <div className="min-h-[calc(100vh-140px)] flex items-center justify-center">
+        <LoadingSpinner text="Loading user profile..." />
+      </div>
+    );
+  }
 
   const displayData = isOwnProfile ? myProfile || profileData : profileData;
   const name = displayData?.name || "Student";
@@ -255,8 +262,12 @@ export default function ProfilePage() {
           <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-extrabold text-3xl flex items-center justify-center shadow-lg ring-4 ring-blue-50 dark:ring-slate-800 shrink-0">
             {avatar ? (
               <img
-                src={avatar}
+                src={getOptimizedImageUrl(avatar, { width: 224, height: 224 })}
                 alt="Profile"
+                loading="lazy"
+                decoding="async"
+                width="112"
+                height="112"
                 className="w-full h-full rounded-full object-cover"
               />
             ) : (
@@ -575,8 +586,12 @@ export default function ProfilePage() {
                     <div className="w-11 h-11 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-bold text-sm flex items-center justify-center shrink-0 overflow-hidden shadow-sm ring-2 ring-blue-50 dark:ring-slate-800">
                       {u.profilePicture ? (
                         <img
-                          src={u.profilePicture}
+                          src={getOptimizedImageUrl(u.profilePicture, { width: 88, height: 88 })}
                           alt={displayName}
+                          loading="lazy"
+                          decoding="async"
+                          width="44"
+                          height="44"
                           className="w-full h-full object-cover"
                         />
                       ) : (

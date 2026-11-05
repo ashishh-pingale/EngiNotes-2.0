@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { fetchReviews } from "../services/reviewService";
+import { getOptimizedImageUrl } from "../utils/imageUtils";
 import AddReviewModal from "../components/reviews/AddReviewModal";
 import LoadingSpinner from "../components/common/LoadingSpinner";
+import { ReviewCardSkeletonGrid } from "../components/common/Skeletons";
 import {
   Star,
   MessageSquarePlus,
@@ -42,7 +44,7 @@ export default function ReviewsPage() {
     : "5.0";
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10 min-h-[calc(100vh-140px)]">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-200/80 dark:border-slate-800 pb-6">
         <div>
@@ -106,7 +108,7 @@ export default function ReviewsPage() {
 
       {/* Reviews Grid */}
       {loading ? (
-        <LoadingSpinner text="Loading student reviews..." />
+        <ReviewCardSkeletonGrid count={6} />
       ) : reviews.length === 0 ? (
         <div className="text-center py-20 bg-white dark:bg-slate-900/90 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 space-y-4 max-w-2xl mx-auto">
           <div className="w-16 h-16 rounded-full bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto">
@@ -169,7 +171,15 @@ export default function ReviewsPage() {
                 <div className="flex items-center gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
                   <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-bold flex items-center justify-center text-xs shrink-0 shadow-2xs overflow-hidden">
                     {r.authorAvatar && r.authorAvatar.startsWith("http") ? (
-                      <img src={r.authorAvatar} alt={r.authorName} className="w-full h-full object-cover" />
+                      <img
+                        src={getOptimizedImageUrl(r.authorAvatar, { width: 72, height: 72 })}
+                        alt={r.authorName || "Student"}
+                        loading="lazy"
+                        decoding="async"
+                        width="36"
+                        height="36"
+                        className="w-full h-full object-cover"
+                      />
                     ) : (
                       r.authorName?.charAt(0)?.toUpperCase() || "S"
                     )}

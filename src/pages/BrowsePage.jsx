@@ -4,6 +4,7 @@ import { fetchApprovedNotes, getNoteById } from "../services/notesService";
 import NoteCard from "../components/notes/NoteCard";
 import NotePreviewModal from "../components/notes/NotePreviewModal";
 import LoadingSpinner from "../components/common/LoadingSpinner";
+import { NoteCardSkeletonGrid } from "../components/common/Skeletons";
 import { Search, Filter, RefreshCw, BookOpen, X, ChevronDown } from "lucide-react";
 
 const branches = ["CSE", "IT", "AIML", "AIDS", "ECE", "Mechanical", "Civil", "Electrical"];
@@ -152,7 +153,7 @@ export default function BrowsePage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 min-h-[calc(100vh-140px)]">
       {/* Header */}
       <div className="text-center max-w-2xl mx-auto space-y-3">
         <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">
@@ -327,7 +328,7 @@ export default function BrowsePage() {
 
       {/* Notes Grid */}
       {loading ? (
-        <LoadingSpinner text="Loading study materials..." />
+        <NoteCardSkeletonGrid count={6} />
       ) : filteredNotes.length === 0 ? (
         <div className="text-center py-16 bg-white dark:bg-slate-900/90 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 space-y-4">
           <div className="w-16 h-16 rounded-full bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto">

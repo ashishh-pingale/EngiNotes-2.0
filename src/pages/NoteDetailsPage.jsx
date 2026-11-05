@@ -9,6 +9,7 @@ import {
 import { rateNote, getUserRatingForNote } from "../services/ratingService";
 import StarRating from "../components/common/StarRating";
 import { downloadNotePDF } from "../utils/downloadUtils";
+import { getOptimizedImageUrl } from "../utils/imageUtils";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import {
@@ -208,7 +209,13 @@ export default function NoteDetailsPage() {
     setTimeout(() => setCopied(false), 2000);
   }
 
-  if (loading) return <LoadingSpinner text="Loading note details..." />;
+  if (loading) {
+    return (
+      <div className="min-h-[calc(100vh-140px)] flex items-center justify-center">
+        <LoadingSpinner text="Loading note details..." />
+      </div>
+    );
+  }
 
   if (!note) {
     return (
@@ -372,7 +379,15 @@ export default function NoteDetailsPage() {
                     <div key={c.id} className="pt-3.5 first:pt-0 flex items-start gap-3">
                       <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-2xs overflow-hidden">
                         {c.authorAvatar ? (
-                          <img src={c.authorAvatar} alt={c.authorName} className="w-full h-full object-cover" />
+                          <img
+                            src={getOptimizedImageUrl(c.authorAvatar, { width: 72, height: 72 })}
+                            alt={c.authorName || "User"}
+                            loading="lazy"
+                            decoding="async"
+                            width="36"
+                            height="36"
+                            className="w-full h-full object-cover"
+                          />
                         ) : (
                           (c.authorName || "S").charAt(0).toUpperCase()
                         )}
@@ -535,8 +550,12 @@ export default function NoteDetailsPage() {
               <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-bold flex items-center justify-center text-lg shadow-sm shrink-0">
                 {note.uploaderAvatar ? (
                   <img
-                    src={note.uploaderAvatar}
+                    src={getOptimizedImageUrl(note.uploaderAvatar, { width: 96, height: 96 })}
                     alt="Uploader"
+                    loading="lazy"
+                    decoding="async"
+                    width="48"
+                    height="48"
                     className="w-full h-full rounded-full object-cover"
                   />
                 ) : (
