@@ -4,47 +4,52 @@ import Modal from "../common/Modal";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
 import {
-  toggleNoteLike,
-  checkIfUserLikedNote,
   recordNoteDownload,
   recordNoteView
 } from "../../services/notesService";
+import { rateNote, getUserRatingForNote } from "../../services/ratingService";
+import StarRating from "../common/StarRating";
 import {
   toggleBookmark,
   checkIfUserBookmarked
 } from "../../services/bookmarkService";
+import { downloadNotePDF } from "../../utils/downloadUtils";
 import {
-  Heart,
   Bookmark,
   Download,
   ExternalLink,
   Eye,
   FileText,
   Calendar,
-  Building
+  Building,
+  Flag
 } from "lucide-react";
+import ReportNoteModal from "./ReportNoteModal";
 
 export default function NotePreviewModal({ note, isOpen, onClose }) {
   const { currentUser } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
-  const [liked, setLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(0);
-  const [likeLoading, setLikeLoading] = useState(false);
+  const [rating, setRating] = useState(0);
+  const [ratingsCount, setRatingsCount] = useState(0);
+  const [userRating, setUserRating] = useState(null);
+  const [ratingSubmitting, setRatingSubmitting] = useState(false);
 
   const [bookmarked, setBookmarked] = useState(false);
   const [bookmarkLoading, setBookmarkLoading] = useState(false);
+  const [isReportOpen, setIsReportOpen] = useState(false);
 
   useEffect(() => {
     if (note) {
-      setLikeCount(note.likes || 0);
+      setRating(Number(note.rating) || 0);
+      setRatingsCount(Number(note.ratingsCount) || 0);
       recordNoteView(note.id);
 
       if (currentUser && note.id) {
-        checkIfUserLikedNote(note.id, currentUser.uid).then(setLiked);
+        getUserRatingForNote(note.id, currentUser.uid).then(setUserRating);
         checkIfUserBookmarked(note.id, currentUser.uid).then(setBookmarked);
       } else {
-        setLiked(false);
+        setUserRating(null);
         setBookmarked(false);
       }
     }
@@ -52,22 +57,24 @@ export default function NotePreviewModal({ note, isOpen, onClose }) {
 
   if (!note) return null;
 
-  async function handleLike() {
+  async function handleRateNote(score) {
     if (!currentUser) {
       onClose();
       navigate("/login");
       return;
     }
-    setLikeLoading(true);
+    setRatingSubmitting(true);
     try {
-      const nowLiked = await toggleNoteLike(note.id, currentUser.uid, liked);
-      setLiked(nowLiked);
-      setLikeCount((prev) => (nowLiked ? prev + 1 : Math.max(0, prev - 1)));
-      showToast(nowLiked ? "Added note to your likes!" : "Unliked note", "info");
+      const res = await rateNote(note.id, currentUser.uid, score, note);
+      setUserRating(res.userRating);
+      setRating(res.rating);
+      setRatingsCount(res.ratingsCount);
+      showToast(`You rated this note ${score} stars!`, "success");
     } catch (e) {
-      console.error("Like toggle failed:", e);
+      console.error("Rate note error:", e);
+      showToast("Could not record rating.", "error");
     } finally {
-      setLikeLoading(false);
+      setRatingSubmitting(false);
     }
   }
 
@@ -98,7 +105,8 @@ export default function NotePreviewModal({ note, isOpen, onClose }) {
   function handleDownload() {
     recordNoteDownload(note.id);
     if (pdfUrl) {
-      window.open(pdfUrl, "_blank");
+      downloadNotePDF(pdfUrl, note.title || `${note.subject || "Notes"}_Sem${note.semester || "1"}`);
+      showToast("Starting download...", "info");
     }
   }
 
@@ -185,32 +193,46 @@ export default function NotePreviewModal({ note, isOpen, onClose }) {
           </div>
 
           {/* Action Buttons */}
-          <div className="space-y-2.5 pt-4 border-t border-slate-100 dark:border-slate-800">
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={handleLike}
-                disabled={likeLoading}
-                className={`py-2.5 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 border transition-all cursor-pointer disabled:opacity-50 ${
-                  liked
-                    ? "bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-900"
-                    : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-rose-600 dark:hover:text-rose-400"
-                }`}
-              >
-                <Heart className={`w-4 h-4 ${liked ? "fill-rose-500 text-rose-500" : ""}`} />
-                {liked ? "Liked Note" : "Like"}
-              </button>
+          <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+            {/* Interactive Rating Strip */}
+            <div className="p-3 rounded-2xl bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-900/40 flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <span className="block text-[11px] font-bold text-amber-900 dark:text-amber-300 uppercase tracking-wider">
+                  Rate Material
+                </span>
+                <span className="text-xs text-amber-600 dark:text-amber-400 font-semibold">
+                  ★ {rating > 0 ? (rating % 1 === 0 ? `${rating}.0` : rating.toFixed(1)) : "New"} {ratingsCount > 0 ? `(${ratingsCount})` : ""}
+                </span>
+              </div>
+              <StarRating
+                value={rating}
+                userRating={userRating}
+                onRate={handleRateNote}
+                disabled={ratingSubmitting}
+                size="md"
+              />
+            </div>
 
+            <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={handleBookmark}
                 disabled={bookmarkLoading}
                 className={`py-2.5 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 border transition-all cursor-pointer disabled:opacity-50 ${
                   bookmarked
-                    ? "bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-900"
+                    ? "bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200 border-amber-300 dark:border-amber-700"
                     : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-amber-600 dark:hover:text-amber-400"
                 }`}
               >
                 <Bookmark className={`w-4 h-4 ${bookmarked ? "fill-amber-500 text-amber-500" : ""}`} />
-                {bookmarked ? "Bookmarked" : "Save"}
+                {bookmarked ? "Bookmarked" : "Save for Later"}
+              </button>
+
+              <button
+                onClick={() => setIsReportOpen(true)}
+                className="py-2.5 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 border border-dashed border-rose-200 dark:border-rose-900/40 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer"
+              >
+                <Flag className="w-3.5 h-3.5" />
+                <span>Report Note</span>
               </button>
             </div>
 
@@ -222,16 +244,31 @@ export default function NotePreviewModal({ note, isOpen, onClose }) {
               Download Document
             </button>
 
-            <Link
-              to={`/notes/${note.id}`}
-              onClick={onClose}
-              className="w-full py-2 text-center text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 flex items-center justify-center gap-1.5 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-colors"
-            >
-              Open Full Note Page <ExternalLink className="w-3.5 h-3.5" />
-            </Link>
+            <div className="flex items-center justify-between pt-1 text-xs">
+              <Link
+                to={`/notes/${note.id}`}
+                onClick={onClose}
+                className="font-semibold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+              >
+                Open Full Note Page <ExternalLink className="w-3.5 h-3.5" />
+              </Link>
+              <button
+                type="button"
+                onClick={() => setIsReportOpen(true)}
+                className="text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 flex items-center gap-1 transition-colors cursor-pointer"
+              >
+                <Flag className="w-3 h-3" /> Report Issue
+              </button>
+            </div>
           </div>
         </div>
       </div>
+
+      <ReportNoteModal
+        note={note}
+        isOpen={isReportOpen}
+        onClose={() => setIsReportOpen(false)}
+      />
     </Modal>
   );
 }

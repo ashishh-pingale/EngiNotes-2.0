@@ -4,7 +4,7 @@ import { fetchApprovedNotes, getNoteById } from "../services/notesService";
 import NoteCard from "../components/notes/NoteCard";
 import NotePreviewModal from "../components/notes/NotePreviewModal";
 import LoadingSpinner from "../components/common/LoadingSpinner";
-import { Search, Filter, RefreshCw, BookOpen, X } from "lucide-react";
+import { Search, Filter, RefreshCw, BookOpen, X, ChevronDown } from "lucide-react";
 
 const branches = ["CSE", "IT", "AIML", "AIDS", "ECE", "Mechanical", "Civil", "Electrical"];
 const years = ["1", "2", "3", "4"];
@@ -21,6 +21,13 @@ export default function BrowsePage() {
   const [year, setYear] = useState(searchParams.get("year") || "");
   const [semester, setSemester] = useState(searchParams.get("semester") || "");
   const [selectedSubject, setSelectedSubject] = useState("");
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+
+  // Pagination state
+  const [visibleCount, setVisibleCount] = useState(12);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  const advancedCount = (semester ? 1 : 0) + (selectedSubject ? 1 : 0);
 
   // Preview Modal
   const [previewNote, setPreviewNote] = useState(null);
@@ -80,6 +87,11 @@ export default function BrowsePage() {
     loadNotes();
   }, [branch]);
 
+  // Reset pagination when filter criteria change
+  useEffect(() => {
+    setVisibleCount(12);
+  }, [search, branch, year, semester, selectedSubject]);
+
   // Real-time automatic letter-wise filter (instant search, resets to default when erased)
   const filteredNotes = useMemo(() => {
     let result = allNotes;
@@ -113,6 +125,18 @@ export default function BrowsePage() {
 
     return result;
   }, [allNotes, year, semester, selectedSubject, search]);
+
+  const displayedNotes = useMemo(() => {
+    return filteredNotes.slice(0, visibleCount);
+  }, [filteredNotes, visibleCount]);
+
+  function handleLoadMore() {
+    setLoadingMore(true);
+    setTimeout(() => {
+      setVisibleCount((prev) => prev + 12);
+      setLoadingMore(false);
+    }, 200);
+  }
 
   function handleSearchSubmit(e) {
     e.preventDefault();
@@ -195,6 +219,32 @@ export default function BrowsePage() {
             ))}
           </select>
 
+          {/* Toggle More Filters Button with Arrow */}
+          <button
+            type="button"
+            onClick={() => setShowAdvancedFilters((prev) => !prev)}
+            className={`py-2.5 px-3.5 rounded-xl border text-sm font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+              showAdvancedFilters || advancedCount > 0
+                ? "bg-blue-50 dark:bg-blue-950/60 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 shadow-2xs font-bold"
+                : "border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+            }`}
+            title={showAdvancedFilters ? "Hide semester & subject filters" : "Show semester & subject filters"}
+            aria-expanded={showAdvancedFilters}
+          >
+            <Filter className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+            <span className="hidden sm:inline text-xs font-semibold">More Filters</span>
+            {advancedCount > 0 && (
+              <span className="px-1.5 py-0.2 rounded-full bg-blue-600 text-white text-[10px] font-bold">
+                {advancedCount}
+              </span>
+            )}
+            <ChevronDown
+              className={`w-4 h-4 transition-transform duration-200 ${
+                showAdvancedFilters ? "rotate-180" : ""
+              }`}
+            />
+          </button>
+
           {/* Reset Button */}
           {(branch || year || semester || selectedSubject || search) && (
             <button
@@ -209,60 +259,68 @@ export default function BrowsePage() {
           )}
         </form>
 
-        {/* Semester Segmented Filter Bar */}
-        <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80">
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-            <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider shrink-0 mr-1">
-              Semester:
-            </span>
-            <button
-              onClick={() => setSemester("")}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold shrink-0 transition-all cursor-pointer ${
-                semester === ""
-                  ? "bg-blue-600 text-white shadow-sm shadow-blue-500/20 font-bold"
-                  : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
-              }`}
-            >
-              All Semesters
-            </button>
-            {semesters.map((s) => (
-              <button
-                key={s}
-                onClick={() => setSemester(semester === s ? "" : s)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold shrink-0 transition-all cursor-pointer ${
-                  semester === s
-                    ? "bg-blue-600 text-white shadow-sm shadow-blue-500/20 font-bold"
-                    : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
-                }`}
-              >
-                Sem {s}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Dynamic Subject Quick Filter Chips */}
-        {availableSubjects.length > 0 && (
-          <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 flex flex-wrap items-center gap-2">
-            <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider shrink-0 mr-1">
-              Subjects:
-            </span>
-            {availableSubjects.map((sub) => {
-              const isSelected = selectedSubject.toLowerCase() === sub.toLowerCase();
-              return (
+        {/* Expandable Advanced Filters (Semester & Subjects) */}
+        {showAdvancedFilters && (
+          <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 space-y-3 animate-in fade-in slide-in-from-top-1 duration-200">
+            {/* Semester Segmented Filter Bar */}
+            <div>
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider shrink-0 mr-1">
+                  Semester:
+                </span>
                 <button
-                  key={sub}
-                  onClick={() => setSelectedSubject(isSelected ? "" : sub)}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-all cursor-pointer ${
-                    isSelected
-                      ? "bg-blue-50 dark:bg-blue-950/80 border-blue-400 dark:border-blue-600 text-blue-700 dark:text-blue-300 font-semibold shadow-2xs"
-                      : "bg-slate-50 dark:bg-slate-800/60 border-slate-200/80 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600 hover:text-blue-600 dark:hover:text-blue-400"
+                  type="button"
+                  onClick={() => setSemester("")}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold shrink-0 transition-all cursor-pointer ${
+                    semester === ""
+                      ? "bg-blue-600 text-white shadow-sm shadow-blue-500/20 font-bold"
+                      : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
                   }`}
                 >
-                  {sub}
+                  All Semesters
                 </button>
-              );
-            })}
+                {semesters.map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setSemester(semester === s ? "" : s)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold shrink-0 transition-all cursor-pointer ${
+                      semester === s
+                        ? "bg-blue-600 text-white shadow-sm shadow-blue-500/20 font-bold"
+                        : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+                    }`}
+                  >
+                    Sem {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Dynamic Subject Quick Filter Chips */}
+            {availableSubjects.length > 0 && (
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800/60 flex flex-wrap items-center gap-2">
+                <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider shrink-0 mr-1">
+                  Subjects:
+                </span>
+                {availableSubjects.map((sub) => {
+                  const isSelected = selectedSubject.toLowerCase() === sub.toLowerCase();
+                  return (
+                    <button
+                      key={sub}
+                      type="button"
+                      onClick={() => setSelectedSubject(isSelected ? "" : sub)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-all cursor-pointer ${
+                        isSelected
+                          ? "bg-blue-50 dark:bg-blue-950/80 border-blue-400 dark:border-blue-600 text-blue-700 dark:text-blue-300 font-semibold shadow-2xs"
+                          : "bg-slate-50 dark:bg-slate-800/60 border-slate-200/80 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600 hover:text-blue-600 dark:hover:text-blue-400"
+                      }`}
+                    >
+                      {sub}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -289,17 +347,53 @@ export default function BrowsePage() {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-7">
-          {filteredNotes.map((note) => (
-            <NoteCard
-              key={note.id}
-              note={note}
-              onPreview={(n) => {
-                setPreviewNote(n);
-                setIsPreviewOpen(true);
-              }}
-            />
-          ))}
+        <div className="space-y-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-7">
+            {displayedNotes.map((note) => (
+              <NoteCard
+                key={note.id}
+                note={note}
+                onPreview={(n) => {
+                  setPreviewNote(n);
+                  setIsPreviewOpen(true);
+                }}
+              />
+            ))}
+          </div>
+
+          {/* Pagination Controls */}
+          {visibleCount < filteredNotes.length && (
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
+              <button
+                type="button"
+                onClick={handleLoadMore}
+                disabled={loadingMore}
+                className="px-6 py-3 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-sm font-semibold hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 shadow-xs hover:shadow-md transition-all flex items-center gap-2.5 cursor-pointer disabled:opacity-50"
+              >
+                {loadingMore ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin text-blue-600 dark:text-blue-400" />
+                    <span>Loading study materials...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Load More Notes</span>
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700/80 text-slate-600 dark:text-slate-300 font-bold">
+                      {displayedNotes.length} of {filteredNotes.length}
+                    </span>
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setVisibleCount(filteredNotes.length)}
+                className="text-xs font-semibold text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 transition-colors py-2 px-3"
+              >
+                Show All ({filteredNotes.length})
+              </button>
+            </div>
+          )}
         </div>
       )}
 

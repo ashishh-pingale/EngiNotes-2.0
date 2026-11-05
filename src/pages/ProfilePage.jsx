@@ -27,7 +27,7 @@ import {
   UserPlus,
   UserCheck,
   BookOpen,
-  Heart,
+  Star,
   Bookmark,
   Users,
   Download
@@ -212,6 +212,40 @@ export default function ProfilePage() {
   const bio = displayData?.bio;
   const avatar = displayData?.profilePicture;
 
+  const uploadsCount = uploadedNotes.length;
+  const totalDownloads = uploadedNotes.reduce((acc, n) => acc + (n.downloads || 0), 0);
+  const ratedNotes = uploadedNotes.filter((n) => Number(n.ratingsCount) > 0);
+  const totalRatingsCount = uploadedNotes.reduce((acc, n) => acc + (Number(n.ratingsCount) || 0), 0);
+  const avgRating = ratedNotes.length > 0
+    ? Math.round((ratedNotes.reduce((acc, n) => acc + (Number(n.rating) || 0), 0) / ratedNotes.length) * 10) / 10
+    : 0;
+
+  let contributorBadge = {
+    title: "Engineering Explorer",
+    emoji: "🌱",
+    color: "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700"
+  };
+
+  if (uploadsCount >= 10 || totalDownloads >= 200 || (avgRating >= 4.5 && totalRatingsCount >= 10)) {
+    contributorBadge = {
+      title: "Campus Legend",
+      emoji: "🥇",
+      color: "bg-amber-500/10 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-300/80 dark:border-amber-700/80"
+    };
+  } else if (uploadsCount >= 5 || totalDownloads >= 50 || (avgRating >= 4.0 && totalRatingsCount >= 5)) {
+    contributorBadge = {
+      title: "Scholar Contributor",
+      emoji: "🥈",
+      color: "bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border-indigo-300/80 dark:border-indigo-700/80"
+    };
+  } else if (uploadsCount >= 1) {
+    contributorBadge = {
+      title: "Note Contributor",
+      emoji: "🥉",
+      color: "bg-blue-500/10 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 border-blue-300/80 dark:border-blue-700/80"
+    };
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
       {/* Profile Header Card */}
@@ -234,8 +268,14 @@ export default function ProfilePage() {
           <div className="flex-1 space-y-3">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">{name}</h1>
-                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-1">
+                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5">
+                  <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">{name}</h1>
+                  <span className={`inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-bold border shadow-2xs ${contributorBadge.color}`}>
+                    <span>{contributorBadge.emoji}</span>
+                    <span>{contributorBadge.title}</span>
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-1.5">
                   {branch && (
                     <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300">
                       {branch}{year ? ` • Year ${year}` : ""}
@@ -365,14 +405,16 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
-                    <Heart className="w-4 h-4" />
+                  <div className="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-950/80 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                    <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
                   </div>
                   <div>
                     <strong className="text-slate-900 dark:text-white font-bold text-sm block">
-                      {uploadedNotes.reduce((acc, n) => acc + (n.likes || 0), 0)}
+                      {avgRating > 0 ? (avgRating % 1 === 0 ? `${avgRating}.0` : avgRating.toFixed(1)) : "New"} ★
                     </strong>
-                    <span className="text-slate-500 dark:text-slate-400 text-[11px]">Likes Received</span>
+                    <span className="text-slate-500 dark:text-slate-400 text-[11px]">
+                      {totalRatingsCount > 0 ? `${totalRatingsCount} Ratings` : "Avg Rating"}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -517,7 +559,7 @@ export default function ProfilePage() {
         ) : (
           <div className="divide-y divide-slate-100 dark:divide-slate-800 max-h-96 overflow-y-auto pr-1 space-y-1">
             {modalUsersList.map((u) => {
-              const displayName = u.name || u.displayName || u.fullName || u.email?.split("@")[0] || "Engineering Student";
+              const displayName = (u.name || u.displayName || u.fullName || u.email?.split("@")[0] || "").trim() || "Engineering Student";
               return (
                 <div
                   key={u.id}
@@ -568,7 +610,7 @@ export default function ProfilePage() {
                         setFollowModalOpen(false);
                         navigate(`/profile/${u.id}`);
                       }}
-                      className="px-3.5 py-1.5 text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 dark:hover:text-white transition-all cursor-pointer shadow-xs"
+                      className="px-3.5 py-1.5 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 dark:hover:text-white transition-all cursor-pointer shadow-xs"
                     >
                       View
                     </button>

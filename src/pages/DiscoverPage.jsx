@@ -16,9 +16,13 @@ import {
   UserPlus,
   UserCheck,
   MessageSquare,
-  Building,
   GraduationCap,
-  Users
+  Users,
+  Trophy,
+  Award,
+  Crown,
+  FileText,
+  Star
 } from "lucide-react";
 
 export default function DiscoverPage() {
@@ -26,6 +30,7 @@ export default function DiscoverPage() {
   const navigate = useNavigate();
 
   const [users, setUsers] = useState([]);
+  const [topContributors, setTopContributors] = useState([]);
   const [followingMap, setFollowingMap] = useState({});
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -36,13 +41,40 @@ export default function DiscoverPage() {
       try {
         // 1. Fetch all users
         const usersSnap = await getDocs(collection(db, "users"));
-        const allUsers = usersSnap.docs
-          .map((d) => ({ id: d.id, ...d.data() }))
-          .filter((u) => u.id !== currentUser?.uid);
+        const allUsers = usersSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
 
-        setUsers(allUsers);
+        // 2. Fetch notes to compute contribution metrics
+        const notesSnap = await getDocs(collection(db, "notes"));
+        const userStatsMap = {};
+        notesSnap.docs.forEach((docSnap) => {
+          const n = docSnap.data();
+          if (n.uploaderId && n.status === "approved") {
+            if (!userStatsMap[n.uploaderId]) {
+              userStatsMap[n.uploaderId] = { uploads: 0, ratingSum: 0, ratingsCount: 0, downloads: 0 };
+            }
+            userStatsMap[n.uploaderId].uploads += 1;
+            userStatsMap[n.uploaderId].ratingSum += Number(n.ratingSum) || (Number(n.rating) ? Number(n.rating) * (Number(n.ratingsCount) || 1) : 0);
+            userStatsMap[n.uploaderId].ratingsCount += Number(n.ratingsCount) || 0;
+            userStatsMap[n.uploaderId].downloads += n.downloads || 0;
+          }
+        });
 
-        // 2. Fetch current user's follows
+        // Compute top contributors
+        const ranked = allUsers
+          .map((u) => {
+            const stats = userStatsMap[u.id] || { uploads: 0, ratingSum: 0, ratingsCount: 0, downloads: 0 };
+            const avgRating = stats.ratingsCount > 0 ? Math.round((stats.ratingSum / stats.ratingsCount) * 10) / 10 : 0;
+            const score = stats.uploads * 10 + avgRating * 10 + stats.ratingsCount * 2 + stats.downloads * 0.5;
+            return { ...u, stats: { ...stats, avgRating }, score };
+          })
+          .filter((u) => u.stats.uploads > 0)
+          .sort((a, b) => b.score - a.score)
+          .slice(0, 3);
+
+        setTopContributors(ranked);
+        setUsers(allUsers.filter((u) => u.id !== currentUser?.uid));
+
+        // 3. Fetch current user's follows
         if (currentUser) {
           const followsSnap = await getDocs(collection(db, "follows"));
           const map = {};
@@ -119,6 +151,89 @@ export default function DiscoverPage() {
         </p>
       </div>
 
+      {/* Top Campus Contributors Leaderboard */}
+      {topContributors.length > 0 && (
+        <div className="bg-gradient-to-br from-blue-50/80 via-white to-indigo-50/80 dark:from-slate-900/90 dark:via-slate-900/80 dark:to-indigo-950/30 rounded-3xl border border-blue-100/80 dark:border-slate-800 p-6 sm:p-7 shadow-sm space-y-5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold">
+                <Trophy className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  Top Campus Contributors
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Recognizing the students powering our study community with top lecture materials.
+                </p>
+              </div>
+            </div>
+            <span className="hidden sm:inline-block text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300">
+              Community Honor Roll
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {topContributors.map((c, idx) => {
+              const rankColor =
+                idx === 0
+                  ? "from-amber-400 to-amber-600 text-white"
+                  : idx === 1
+                  ? "from-slate-300 to-slate-500 text-white"
+                  : "from-amber-700 to-amber-900 text-white";
+
+              const badgeLabel =
+                idx === 0
+                  ? "🥇 Campus Legend"
+                  : idx === 1
+                  ? "🥈 Scholar"
+                  : "🥉 Contributor";
+
+              return (
+                <div
+                  key={c.id}
+                  className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl border border-slate-200/80 dark:border-slate-700/80 p-4 shadow-sm hover:shadow-md transition-all flex items-center gap-3.5 relative overflow-hidden"
+                >
+                  <div className={`w-6 h-6 rounded-full bg-gradient-to-tr ${rankColor} text-[11px] font-extrabold flex items-center justify-center absolute top-2.5 right-2.5 shadow-2xs`}>
+                    #{idx + 1}
+                  </div>
+
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-bold text-sm flex items-center justify-center shrink-0 overflow-hidden shadow-2xs">
+                    {c.profilePicture ? (
+                      <img src={c.profilePicture} alt={c.name} className="w-full h-full object-cover" />
+                    ) : (
+                      (c.name || "U").charAt(0).toUpperCase()
+                    )}
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <Link
+                      to={`/profile/${c.id}`}
+                      className="font-bold text-sm text-slate-900 dark:text-white truncate block hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                    >
+                      {c.name || "Student"}
+                    </Link>
+                    <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                      {c.branch ? `${c.branch} • ` : ""}{badgeLabel}
+                    </div>
+                    <div className="flex items-center gap-3 mt-1.5 text-[11px] font-semibold text-slate-600 dark:text-slate-300">
+                      <span className="flex items-center gap-1">
+                        <FileText className="w-3 h-3 text-blue-500" /> {c.stats.uploads} notes
+                      </span>
+                      <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
+                        <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                        {c.stats.avgRating > 0 ? `${c.stats.avgRating} ★` : "New"}
+                        {c.stats.ratingsCount > 0 && <span className="text-slate-400">({c.stats.ratingsCount})</span>}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Search Bar */}
       <div className="max-w-xl mx-auto">
         <div className="relative">
@@ -176,25 +291,10 @@ export default function DiscoverPage() {
                     >
                       {user.name || "Engineering Student"}
                     </Link>
-                    <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/50 border border-blue-100 dark:border-blue-900/50 text-blue-700 dark:text-blue-400 mt-1 inline-block">
+                    <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/50 border border-blue-100 dark:border-blue-900/50 text-blue-700 dark:text-blue-400 mt-1.5 inline-block">
                       {user.branch || "Engineering"}{user.year ? ` • Year ${user.year}` : ""}
                     </span>
                   </div>
-
-                  {/* College */}
-                  {user.college && (
-                    <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center justify-center gap-1.5 line-clamp-1">
-                      <Building className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0" />
-                      {user.college}
-                    </p>
-                  )}
-
-                  {/* Bio */}
-                  {user.bio && (
-                    <p className="text-xs text-slate-600 dark:text-slate-300 line-clamp-2 leading-relaxed bg-slate-50 dark:bg-slate-800/60 p-2.5 rounded-xl">
-                      {user.bio}
-                    </p>
-                  )}
                 </div>
 
                 {/* Actions */}

@@ -27,8 +27,15 @@ import {
   Check,
   Eye,
   FileText,
-  X
+  X,
+  Flag,
+  AlertTriangle
 } from "lucide-react";
+import {
+  fetchNoteReports,
+  updateReportStatus,
+  deleteReport
+} from "../services/reportService";
 
 export default function AdminDashboardPage() {
   const { currentUser } = useAuth();
@@ -40,6 +47,7 @@ export default function AdminDashboardPage() {
   const [approvedNotes, setApprovedNotes] = useState([]);
   const [usersList, setUsersList] = useState([]);
   const [contactMessages, setContactMessages] = useState([]);
+  const [noteReports, setNoteReports] = useState([]);
 
   // Reject Modal
   const [rejectModalNote, setRejectModalNote] = useState(null);
@@ -97,6 +105,18 @@ export default function AdminDashboardPage() {
     );
   }, [contactMessages, search]);
 
+  const filteredReports = useMemo(() => {
+    if (!search.trim()) return noteReports;
+    const s = search.trim().toLowerCase();
+    return noteReports.filter(
+      (r) =>
+        (r.noteTitle && r.noteTitle.toLowerCase().includes(s)) ||
+        (r.reason && r.reason.toLowerCase().includes(s)) ||
+        (r.reporterName && r.reporterName.toLowerCase().includes(s)) ||
+        (r.details && r.details.toLowerCase().includes(s))
+    );
+  }, [noteReports, search]);
+
   async function loadAdminData() {
     setLoading(true);
     try {
@@ -114,6 +134,10 @@ export default function AdminDashboardPage() {
       // 3. Fetch contact messages
       const msgsSnap = await getDocs(collection(db, "contactMessages"));
       setContactMessages(msgsSnap.docs.map((d) => ({ id: d.id, ...d.data() })));
+
+      // 4. Fetch note reports
+      const reports = await fetchNoteReports();
+      setNoteReports(reports);
     } catch (err) {
       console.error("Admin data load error:", err);
     } finally {
@@ -225,6 +249,49 @@ export default function AdminDashboardPage() {
     }
   }
 
+  async function handleDismissReport(reportId) {
+    try {
+      await updateReportStatus(reportId, "dismissed");
+      setNoteReports((prev) =>
+        prev.map((r) => (r.id === reportId ? { ...r, status: "dismissed" } : r))
+      );
+    } catch (err) {
+      console.error("Dismiss report error:", err);
+    }
+  }
+
+  async function handleResolveReportAndRejectNote(report) {
+    try {
+      // 1. Mark note rejected
+      if (report.noteId) {
+        await updateDoc(doc(db, "notes", report.noteId), {
+          status: "rejected",
+          rejectedAt: serverTimestamp(),
+          rejectReason: `Removed due to moderation report: ${report.reason}`
+        });
+      }
+      // 2. Mark report resolved
+      await updateReportStatus(report.id, "resolved", "Note unapproved and taken down");
+      setNoteReports((prev) =>
+        prev.map((r) => (r.id === report.id ? { ...r, status: "resolved" } : r))
+      );
+      // 3. Refresh notes lists
+      setApprovedNotes((prev) => prev.filter((n) => n.id !== report.noteId));
+      setPendingNotes((prev) => prev.filter((n) => n.id !== report.noteId));
+    } catch (err) {
+      console.error("Resolve report error:", err);
+    }
+  }
+
+  async function handleDeleteReport(reportId) {
+    try {
+      await deleteReport(reportId);
+      setNoteReports((prev) => prev.filter((r) => r.id !== reportId));
+    } catch (err) {
+      console.error("Delete report record error:", err);
+    }
+  }
+
   const totalDownloads = approvedNotes.reduce((acc, n) => acc + (n.downloads || 0), 0);
 
   return (
@@ -330,6 +397,17 @@ export default function AdminDashboardPage() {
               }`}
             >
               <Mail className="w-4 h-4" /> Messages ({contactMessages.length})
+            </button>
+
+            <button
+              onClick={() => setActiveTab("reports")}
+              className={`pb-4 font-bold text-sm border-b-2 transition-colors flex items-center gap-2 cursor-pointer ${
+                activeTab === "reports"
+                  ? "border-rose-600 text-rose-600 dark:text-rose-400"
+                  : "border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
+              }`}
+            >
+              <Flag className="w-4 h-4" /> Reports ({noteReports.filter((r) => r.status === "pending").length})
             </button>
           </div>
 
@@ -441,7 +519,7 @@ export default function AdminDashboardPage() {
                     <th className="py-3 px-4 rounded-l-xl">Title / Subject</th>
                     <th className="py-3 px-4">Branch</th>
                     <th className="py-3 px-4">Downloads</th>
-                    <th className="py-3 px-4">Likes</th>
+                    <th className="py-3 px-4">Rating</th>
                     <th className="py-3 px-4 rounded-r-xl text-right">Delete</th>
                   </tr>
                 </thead>
@@ -454,7 +532,10 @@ export default function AdminDashboardPage() {
                       </td>
                       <td className="py-4 px-4 text-xs font-medium">{note.branch}</td>
                       <td className="py-4 px-4 text-xs">{note.downloads || 0}</td>
-                      <td className="py-4 px-4 text-xs">{note.likes || 0}</td>
+                      <td className="py-4 px-4 text-xs font-semibold text-amber-600 dark:text-amber-400">
+                        {note.rating > 0 ? `★ ${note.rating % 1 === 0 ? `${note.rating}.0` : Number(note.rating).toFixed(1)}` : "★ New"}
+                        {note.ratingsCount > 0 && <span className="text-slate-400 font-normal"> ({note.ratingsCount})</span>}
+                      </td>
                       <td className="py-4 px-4 text-right">
                         <button
                           onClick={() => handleDeleteNote(note.id)}
@@ -509,7 +590,7 @@ export default function AdminDashboardPage() {
                 </tbody>
               </table>
             </div>
-          ) : (
+          ) : activeTab === "messages" ? (
             /* Contact Messages Table */
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm text-slate-600 dark:text-slate-300">
@@ -562,6 +643,108 @@ export default function AdminDashboardPage() {
                       </td>
                     </tr>
                   ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            /* Flagged Reports Table */
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm text-slate-600 dark:text-slate-300">
+                <thead className="bg-slate-50 dark:bg-slate-800/60 text-xs font-bold uppercase text-slate-400 dark:text-slate-400 tracking-wider">
+                  <tr>
+                    <th className="py-3 px-4 rounded-l-xl">Reported Material</th>
+                    <th className="py-3 px-4">Reason & Details</th>
+                    <th className="py-3 px-4">Reporter</th>
+                    <th className="py-3 px-4">Status</th>
+                    <th className="py-3 px-4 rounded-r-xl text-right">Moderation Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {filteredReports.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="py-12 text-center text-slate-400 dark:text-slate-500 text-sm">
+                        No flagged note reports found.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredReports.map((r) => {
+                      const isPending = r.status === "pending";
+                      return (
+                        <tr key={r.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
+                          <td className="py-4 px-4 font-semibold text-slate-900 dark:text-white max-w-xs">
+                            <div className="truncate">{r.noteTitle}</div>
+                            {r.noteId && (
+                              <a
+                                href={`/notes/${r.noteId}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-xs text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1 mt-0.5"
+                              >
+                                View Note <Eye className="w-3 h-3" />
+                              </a>
+                            )}
+                          </td>
+                          <td className="py-4 px-4">
+                            <span className="inline-block px-2 py-0.5 rounded text-[11px] font-semibold bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/60 mb-1">
+                              {r.reason}
+                            </span>
+                            {r.details && (
+                              <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm whitespace-pre-line line-clamp-2">
+                                {r.details}
+                              </p>
+                            )}
+                          </td>
+                          <td className="py-4 px-4 text-xs">
+                            <div className="font-medium text-slate-800 dark:text-slate-200">
+                              {r.reporterName}
+                            </div>
+                            <div className="text-slate-400 dark:text-slate-500">
+                              {r.reporterEmail}
+                            </div>
+                          </td>
+                          <td className="py-4 px-4 text-xs">
+                            <span
+                              className={`px-2 py-0.5 rounded font-semibold ${
+                                isPending
+                                  ? "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300"
+                                  : r.status === "resolved"
+                                  ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300"
+                                  : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
+                              }`}
+                            >
+                              {r.status || "pending"}
+                            </span>
+                          </td>
+                          <td className="py-4 px-4 text-right space-x-2">
+                            {isPending && (
+                              <>
+                                <button
+                                  onClick={() => handleResolveReportAndRejectNote(r)}
+                                  className="px-2.5 py-1 rounded bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold cursor-pointer shadow-2xs"
+                                  title="Unapprove note and resolve report"
+                                >
+                                  Remove Note
+                                </button>
+                                <button
+                                  onClick={() => handleDismissReport(r.id)}
+                                  className="px-2.5 py-1 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-medium text-slate-700 dark:text-slate-200 cursor-pointer"
+                                >
+                                  Dismiss
+                                </button>
+                              </>
+                            )}
+                            <button
+                              onClick={() => handleDeleteReport(r.id)}
+                              className="p-1 rounded text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
+                              title="Delete report entry"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
                 </tbody>
               </table>
             </div>

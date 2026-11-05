@@ -2,8 +2,8 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
-import { toggleNoteLike, checkIfUserLikedNote } from "../../services/notesService";
 import { toggleBookmark, checkIfUserBookmarked } from "../../services/bookmarkService";
+import StarRating from "../common/StarRating";
 import {
   Laptop,
   Globe,
@@ -16,7 +16,6 @@ import {
   FileText,
   Eye,
   ArrowRight,
-  Heart,
   Bookmark
 } from "lucide-react";
 
@@ -68,44 +67,20 @@ export default function NoteCard({ note, onPreview }) {
   const { showToast } = useToast();
   const navigate = useNavigate();
 
-  const [liked, setLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(note.likes || 0);
-  const [likeLoading, setLikeLoading] = useState(false);
-
+  const [rating, setRating] = useState(note.rating || 0);
+  const [ratingsCount, setRatingsCount] = useState(note.ratingsCount || 0);
   const [bookmarked, setBookmarked] = useState(false);
   const [bookmarkLoading, setBookmarkLoading] = useState(false);
 
   useEffect(() => {
-    setLikeCount(note.likes || 0);
+    setRating(note.rating || 0);
+    setRatingsCount(note.ratingsCount || 0);
     if (currentUser && note.id) {
-      checkIfUserLikedNote(note.id, currentUser.uid).then(setLiked);
       checkIfUserBookmarked(note.id, currentUser.uid).then(setBookmarked);
     } else {
-      setLiked(false);
       setBookmarked(false);
     }
-  }, [note.id, note.likes, currentUser]);
-
-  async function handleQuickLike(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!currentUser) {
-      showToast("Please sign in to like study notes.", "info");
-      navigate("/login");
-      return;
-    }
-    setLikeLoading(true);
-    try {
-      const nowLiked = await toggleNoteLike(note.id, currentUser.uid, liked);
-      setLiked(nowLiked);
-      setLikeCount((prev) => (nowLiked ? prev + 1 : Math.max(0, prev - 1)));
-      showToast(nowLiked ? "Liked note!" : "Removed like.", "success");
-    } catch (err) {
-      console.error("Card like error:", err);
-    } finally {
-      setLikeLoading(false);
-    }
-  }
+  }, [note.id, note.rating, note.ratingsCount, currentUser]);
 
   async function handleQuickBookmark(e) {
     e.preventDefault();
@@ -156,8 +131,17 @@ export default function NoteCard({ note, onPreview }) {
             {branchMeta.icon}
           </div>
 
-          {/* Top-Right Pills (Bookmark + Like Button + Preview) */}
+          {/* Top-Right Pills (Star Rating Badge + Bookmark + Preview) */}
           <div className="flex items-center gap-1.5">
+            {/* Star Rating Badge */}
+            <Link
+              to={`/notes/${note.id}`}
+              className="hover:scale-105 transition-transform"
+              title="Click to view ratings and reviews"
+            >
+              <StarRating value={rating} count={ratingsCount} readonly size="xs" />
+            </Link>
+
             {/* Quick Bookmark Button */}
             <button
               onClick={handleQuickBookmark}
@@ -171,21 +155,6 @@ export default function NoteCard({ note, onPreview }) {
               aria-label="Save note"
             >
               <Bookmark className={`w-3.5 h-3.5 ${bookmarked ? "fill-amber-500 text-amber-500" : ""}`} />
-            </button>
-
-            {/* Quick Like Button */}
-            <button
-              onClick={handleQuickLike}
-              disabled={likeLoading}
-              className={`text-xs font-semibold px-2.5 py-1.5 rounded-full border transition-all flex items-center gap-1 cursor-pointer shadow-2xs ${
-                liked
-                  ? "bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-900/60"
-                  : "bg-slate-50 dark:bg-slate-800/80 hover:bg-rose-50/50 dark:hover:bg-rose-950/30 text-slate-600 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 border-slate-200/70 dark:border-slate-700"
-              }`}
-              title={liked ? "Liked Note" : "Like This Note"}
-            >
-              <Heart className={`w-3.5 h-3.5 ${liked ? "fill-rose-500 text-rose-500" : ""}`} />
-              <span>{likeCount}</span>
             </button>
 
             {onPreview && (

@@ -23,7 +23,7 @@ import {
   MessageSquare,
   MessageSquarePlus
 } from "lucide-react";
-import { getHomePageMetrics } from "../services/homeService";
+import { getHomePageMetrics, getCachedHomePageMetrics } from "../services/homeService";
 import AddReviewModal from "../components/reviews/AddReviewModal";
 
 const baseBranches = [
@@ -61,7 +61,7 @@ const features = [
 ];
 
 export default function HomePage() {
-  const [metrics, setMetrics] = useState(null);
+  const [metrics, setMetrics] = useState(() => getCachedHomePageMetrics());
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
 
   function loadMetrics() {
@@ -184,7 +184,7 @@ export default function HomePage() {
       </section>
 
       {/* Engineering Branches Grid with Live DB Counts */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 content-visibility-auto">
         <div className="text-center space-y-3 mb-12">
           <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
             Browse By Engineering Branch
@@ -221,7 +221,7 @@ export default function HomePage() {
       </section>
 
       {/* Why Choose EngiNotes Features */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 content-visibility-auto">
         <div className="rounded-3xl bg-gradient-to-b from-slate-900 to-slate-950 text-white p-8 sm:p-12 lg:p-16 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
           <div className="max-w-2xl mb-12 space-y-3">
@@ -253,7 +253,7 @@ export default function HomePage() {
       </section>
 
       {/* Student Reviews & Feedback Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 content-visibility-auto">
         {/* Section Header (Centered) */}
         <div className="text-center space-y-3 mb-12 max-w-2xl mx-auto">
           <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">

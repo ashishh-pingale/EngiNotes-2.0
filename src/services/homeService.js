@@ -2,7 +2,27 @@ import { db } from "./firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { fetchTopReviews } from "./reviewService";
 
+const CACHE_KEY = "enginotes_home_metrics_v2";
+const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes cache window
+
+/**
+ * Returns cached metrics synchronously for instant (0ms) First Contentful Paint.
+ */
+export function getCachedHomePageMetrics() {
+  try {
+    const raw = sessionStorage.getItem(CACHE_KEY) || localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed && parsed.data && Date.now() - (parsed.timestamp || 0) < CACHE_TTL_MS) {
+      return parsed.data;
+    }
+  } catch {}
+  return null;
+}
+
 export async function getHomePageMetrics() {
+  const cached = getCachedHomePageMetrics();
+
   try {
     // 1. Fetch approved notes
     const notesQuery = query(collection(db, "notes"), where("status", "==", "approved"));
@@ -45,7 +65,7 @@ export async function getHomePageMetrics() {
     // 6. Real user reviews from reviews collection (with resilient fallback)
     const testimonials = await fetchTopReviews(3);
 
-    return {
+    const result = {
       notesCount: approvedNotes.length,
       usersCount: users.length,
       collegesCount: collegesSet.size || (users.length > 0 ? 1 : 0),
@@ -53,8 +73,17 @@ export async function getHomePageMetrics() {
       branchCounts,
       testimonials
     };
+
+    // Save fresh snapshot to cache for subsequent 0ms loads
+    try {
+      const payload = JSON.stringify({ data: result, timestamp: Date.now() });
+      sessionStorage.setItem(CACHE_KEY, payload);
+      localStorage.setItem(CACHE_KEY, payload);
+    } catch {}
+
+    return result;
   } catch (error) {
     console.error("Error fetching homepage dynamic metrics:", error);
-    return null;
+    return cached || null;
   }
 }

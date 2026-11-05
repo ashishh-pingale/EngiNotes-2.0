@@ -50,6 +50,11 @@ service cloud.firestore {
 
       // Only admins can delete user documents
       allow delete: if isAdmin();
+
+      // Subcollection bookmarks: /users/{userId}/bookmarks/{noteId}
+      match /bookmarks/{noteId} {
+        allow read, write: if isSignedIn() && request.auth.uid == userId;
+      }
     }
 
     // =====================================================
@@ -88,7 +93,10 @@ service cloud.firestore {
           request.resource.data.diff(resource.data).affectedKeys().hasOnly([
             "views",
             "downloads",
-            "likes"
+            "likes",
+            "rating",
+            "ratingSum",
+            "ratingsCount"
           ])
         );
 
@@ -111,7 +119,7 @@ service cloud.firestore {
     }
 
     // =====================================================
-    // NOTE LIKES COLLECTION
+    // NOTE LIKES COLLECTION (LEGACY)
     // =====================================================
 
     match /noteLikes/{likeId} {
@@ -122,6 +130,26 @@ service cloud.firestore {
         request.auth.uid == request.resource.data.userId;
 
       // Users can remove their own likes, or admin can moderate
+      allow delete: if isSignedIn() &&
+        (
+          request.auth.uid == resource.data.userId ||
+          isAdmin()
+        );
+    }
+
+    // =====================================================
+    // NOTE RATINGS COLLECTION (5-STAR RATINGS)
+    // =====================================================
+
+    match /noteRatings/{ratingId} {
+      allow read: if true;
+
+      // Users can only record ratings under their own UID (1-5 stars)
+      allow create, update: if isSignedIn() &&
+        request.auth.uid == request.resource.data.userId &&
+        request.resource.data.rating >= 1 &&
+        request.resource.data.rating <= 5;
+
       allow delete: if isSignedIn() &&
         (
           request.auth.uid == resource.data.userId ||
@@ -239,6 +267,39 @@ service cloud.firestore {
           ('authorId' in resource.data && request.auth.uid == resource.data.authorId) ||
           isAdmin()
         );
+    }
+
+    // =====================================================
+    // NOTE COMMENTS / Q&A COLLECTION
+    // =====================================================
+
+    match /noteComments/{commentId} {
+      // Questions and comments are publicly viewable on notes
+      allow read: if true;
+
+      // Authenticated users can post comments as themselves
+      allow create: if isSignedIn() &&
+        request.auth.uid == request.resource.data.authorId;
+
+      // Author or admin can update or delete comments
+      allow update, delete: if isSignedIn() &&
+        (
+          request.auth.uid == resource.data.authorId ||
+          isAdmin()
+        );
+    }
+
+    // =====================================================
+    // NOTE REPORTS COLLECTION (MODERATION)
+    // =====================================================
+
+    match /noteReports/{reportId} {
+      // Authenticated users can file a report
+      allow create: if isSignedIn() &&
+        request.auth.uid == request.resource.data.reporterId;
+
+      // Only admins can inspect, resolve, or remove reports
+      allow read, update, delete: if isAdmin();
     }
 
     // =====================================================

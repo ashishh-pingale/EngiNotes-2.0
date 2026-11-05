@@ -4,20 +4,26 @@ import {
   getNoteById,
   recordNoteView,
   recordNoteDownload,
-  toggleNoteLike,
-  checkIfUserLikedNote,
   fetchApprovedNotes
 } from "../services/notesService";
+import { rateNote, getUserRatingForNote } from "../services/ratingService";
+import StarRating from "../components/common/StarRating";
+import { downloadNotePDF } from "../utils/downloadUtils";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import {
   toggleBookmark,
   checkIfUserBookmarked
 } from "../services/bookmarkService";
+import {
+  fetchNoteComments,
+  addNoteComment,
+  deleteNoteComment
+} from "../services/commentService";
+import ReportNoteModal from "../components/notes/ReportNoteModal";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 import NoteCard from "../components/notes/NoteCard";
 import {
-  Heart,
   Bookmark,
   Download,
   Share2,
@@ -27,25 +33,36 @@ import {
   ArrowLeft,
   FileText,
   UserCheck,
-  ExternalLink
+  ExternalLink,
+  MessageSquare,
+  Send,
+  Trash2,
+  Flag
 } from "lucide-react";
 
 export default function NoteDetailsPage() {
   const { noteId } = useParams();
-  const { currentUser } = useAuth();
+  const { currentUser, userProfile } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
 
   const [note, setNote] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [liked, setLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(0);
-  const [likeLoading, setLikeLoading] = useState(false);
+  const [rating, setRating] = useState(0);
+  const [ratingsCount, setRatingsCount] = useState(0);
+  const [userRating, setUserRating] = useState(null);
+  const [ratingSubmitting, setRatingSubmitting] = useState(false);
 
   const [bookmarked, setBookmarked] = useState(false);
   const [bookmarkLoading, setBookmarkLoading] = useState(false);
 
+  const [comments, setComments] = useState([]);
+  const [commentsLoading, setCommentsLoading] = useState(false);
+  const [newCommentText, setNewCommentText] = useState("");
+  const [submittingComment, setSubmittingComment] = useState(false);
+
+  const [isReportOpen, setIsReportOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [relatedNotes, setRelatedNotes] = useState([]);
 
@@ -56,14 +73,15 @@ export default function NoteDetailsPage() {
         const data = await getNoteById(noteId);
         if (data) {
           setNote(data);
-          setLikeCount(data.likes || 0);
+          setRating(Number(data.rating) || 0);
+          setRatingsCount(Number(data.ratingsCount) || 0);
           recordNoteView(noteId);
 
           if (currentUser) {
-            checkIfUserLikedNote(noteId, currentUser.uid).then(setLiked);
+            getUserRatingForNote(noteId, currentUser.uid).then(setUserRating);
             checkIfUserBookmarked(noteId, currentUser.uid).then(setBookmarked);
           } else {
-            setLiked(false);
+            setUserRating(null);
             setBookmarked(false);
           }
 
@@ -73,6 +91,12 @@ export default function NoteDetailsPage() {
               setRelatedNotes(rel.filter((r) => r.id !== noteId).slice(0, 3));
             });
           }
+
+          // Load comments
+          setCommentsLoading(true);
+          fetchNoteComments(noteId)
+            .then(setComments)
+            .finally(() => setCommentsLoading(false));
         }
       } catch (err) {
         console.error("Failed to load note:", err);
@@ -84,22 +108,64 @@ export default function NoteDetailsPage() {
     load();
   }, [noteId, currentUser]);
 
-  async function handleLike() {
+  async function handlePostComment(e) {
+    e.preventDefault();
     if (!currentUser) {
       navigate("/login", { state: { from: location } });
       return;
     }
-    setLikeLoading(true);
+    if (!newCommentText.trim()) return;
+
+    setSubmittingComment(true);
+    try {
+      const created = await addNoteComment(
+        note.id || noteId,
+        newCommentText,
+        currentUser,
+        userProfile,
+        note?.uploaderId,
+        note?.title
+      );
+      setComments((prev) => [...prev, created]);
+      setNewCommentText("");
+      showToast("Question posted to class discussion!", "success");
+    } catch (err) {
+      console.error("Error posting comment:", err);
+      showToast("Failed to post question. Please try again.", "error");
+    } finally {
+      setSubmittingComment(false);
+    }
+  }
+
+  async function handleDeleteComment(commentId) {
+    try {
+      await deleteNoteComment(commentId, note?.id || noteId);
+      setComments((prev) => prev.filter((c) => c.id !== commentId));
+      showToast("Comment deleted.", "info");
+    } catch (err) {
+      console.error("Failed to delete comment:", err);
+      showToast("Could not delete comment.", "error");
+    }
+  }
+
+  async function handleRateNote(score) {
+    if (!currentUser) {
+      navigate("/login", { state: { from: location } });
+      return;
+    }
+    setRatingSubmitting(true);
     try {
       const targetNoteId = note.id || noteId;
-      const nowLiked = await toggleNoteLike(targetNoteId, currentUser.uid, liked);
-      setLiked(nowLiked);
-      setLikeCount((prev) => (nowLiked ? prev + 1 : Math.max(0, prev - 1)));
-      showToast(nowLiked ? "Added note to your likes!" : "Unliked note", "info");
+      const res = await rateNote(targetNoteId, currentUser.uid, score, note);
+      setUserRating(res.userRating);
+      setRating(res.rating);
+      setRatingsCount(res.ratingsCount);
+      showToast(`You rated this note ${score} stars! Thank you for helping classmates.`, "success");
     } catch (e) {
-      console.error("Like toggle error:", e);
+      console.error("Rate note error:", e);
+      showToast("Could not save rating. Please try again.", "error");
     } finally {
-      setLikeLoading(false);
+      setRatingSubmitting(false);
     }
   }
 
@@ -130,7 +196,8 @@ export default function NoteDetailsPage() {
       recordNoteDownload(note.id);
       const downloadUrl = note.pdfUrl || note.fileUrl;
       if (downloadUrl) {
-        window.open(downloadUrl, "_blank");
+        downloadNotePDF(downloadUrl, note.title || `${note.subject || "Notes"}_Sem${note.semester || "1"}`);
+        showToast("Starting download...", "info");
       }
     }
   }
@@ -216,6 +283,139 @@ export default function NoteDetailsPage() {
               </div>
             )}
           </div>
+
+          {/* Class Questions & Discussion Section */}
+          <div className="bg-white dark:bg-slate-900/90 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-6 sm:p-7 shadow-sm space-y-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                  <MessageSquare className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                    Class Questions & Discussion
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Ask questions, clarify derivations, or leave study tips for peers.
+                  </p>
+                </div>
+              </div>
+              <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                {comments.length} {comments.length === 1 ? "question" : "questions"}
+              </span>
+            </div>
+
+            {/* Post Input */}
+            {currentUser ? (
+              <form onSubmit={handlePostComment} className="space-y-3">
+                <div className="relative">
+                  <textarea
+                    rows={3}
+                    value={newCommentText}
+                    onChange={(e) => setNewCommentText(e.target.value)}
+                    placeholder="Ask a question about this lecture note or share a helpful insight..."
+                    className="w-full p-3.5 pr-12 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/60 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all resize-none"
+                  />
+                  <button
+                    type="submit"
+                    disabled={submittingComment || !newCommentText.trim()}
+                    className="absolute right-3 bottom-3.5 p-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-40 transition-all cursor-pointer shadow-sm"
+                    title="Post question"
+                  >
+                    <Send className="w-4 h-4" />
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div className="p-4 rounded-2xl bg-blue-50/60 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/60 flex items-center justify-between gap-4 text-xs">
+                <span className="text-blue-800 dark:text-blue-300">
+                  Have a question about this material? Sign in to join the peer discussion.
+                </span>
+                <Link
+                  to="/login"
+                  state={{ from: location }}
+                  className="px-3.5 py-1.5 rounded-xl bg-blue-600 text-white font-semibold shrink-0 hover:bg-blue-700 transition-colors shadow-2xs"
+                >
+                  Sign In
+                </Link>
+              </div>
+            )}
+
+            {/* Comments Thread */}
+            {commentsLoading ? (
+              <div className="py-8 text-center text-xs text-slate-400">Loading discussion...</div>
+            ) : comments.length === 0 ? (
+              <div className="py-8 text-center text-slate-400 dark:text-slate-500 space-y-1 border border-dashed border-slate-100 dark:border-slate-800 rounded-2xl p-6">
+                <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                  No questions yet
+                </p>
+                <p className="text-xs">
+                  Be the first classmate to start a discussion on these notes!
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3.5 divide-y divide-slate-100 dark:divide-slate-800">
+                {comments.map((c) => {
+                  const isAuthor = currentUser && currentUser.uid === c.authorId;
+                  const isAdmin = userProfile?.role === "admin";
+                  const canDelete = isAuthor || isAdmin;
+                  const timeStr = c.createdAt?.seconds
+                    ? new Date(c.createdAt.seconds * 1000).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit"
+                      })
+                    : "Just now";
+
+                  return (
+                    <div key={c.id} className="pt-3.5 first:pt-0 flex items-start gap-3">
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-2xs overflow-hidden">
+                        {c.authorAvatar ? (
+                          <img src={c.authorAvatar} alt={c.authorName} className="w-full h-full object-cover" />
+                        ) : (
+                          (c.authorName || "S").charAt(0).toUpperCase()
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 truncate">
+                            <Link
+                              to={`/profile/${c.authorId}`}
+                              className="text-xs font-bold text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors truncate"
+                            >
+                              {c.authorName || "Student"}
+                            </Link>
+                            {c.authorBranch && (
+                              <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300">
+                                {c.authorBranch}
+                              </span>
+                            )}
+                            <span className="text-[11px] text-slate-400 dark:text-slate-500">
+                              {timeStr}
+                            </span>
+                          </div>
+
+                          {canDelete && (
+                            <button
+                              onClick={() => handleDeleteComment(c.id)}
+                              className="text-slate-400 hover:text-rose-600 p-1 rounded-lg transition-colors cursor-pointer"
+                              title="Delete comment"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                        <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-200 mt-1 leading-relaxed whitespace-pre-line">
+                          {c.text}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Right Column: Note Metadata & Author info */}
@@ -246,8 +446,11 @@ export default function NoteDetailsPage() {
                 <span className="text-base font-bold text-slate-800 dark:text-slate-200">{note.downloads || 0}</span>
               </div>
               <div>
-                <span className="block text-xs text-slate-400 dark:text-slate-500">Likes</span>
-                <span className="text-base font-bold text-slate-800 dark:text-slate-200">{likeCount}</span>
+                <span className="block text-xs text-slate-400 dark:text-slate-500">Rating</span>
+                <span className="text-base font-bold text-amber-500 dark:text-amber-400 flex items-center justify-center gap-1">
+                  ★ {rating > 0 ? (rating % 1 === 0 ? `${rating}.0` : rating.toFixed(1)) : "New"}
+                  {ratingsCount > 0 && <span className="text-xs text-slate-400 font-normal">({ratingsCount})</span>}
+                </span>
               </div>
             </div>
 
@@ -260,32 +463,45 @@ export default function NoteDetailsPage() {
                 <Download className="w-5 h-5" /> Download Full PDF
               </button>
 
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  onClick={handleLike}
-                  disabled={likeLoading}
-                  className={`py-3 px-3.5 rounded-2xl font-semibold text-xs sm:text-sm border flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50 ${
-                    liked
-                      ? "bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-900"
-                      : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-rose-600 dark:hover:text-rose-400"
-                  }`}
-                >
-                  <Heart className={`w-4 h-4 ${liked ? "fill-rose-500 text-rose-500" : ""}`} />
-                  {liked ? "Liked" : "Like Note"}
-                </button>
+              {/* Interactive 5-Star Rating Card */}
+              <div className="p-4 rounded-2xl bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-900/40 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-wider text-amber-900 dark:text-amber-300">
+                    Rate this Material
+                  </span>
+                  {userRating ? (
+                    <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                      ✓ Your rating: {userRating} ★
+                    </span>
+                  ) : (
+                    <span className="text-xs text-slate-500 dark:text-slate-400">
+                      Tap a star
+                    </span>
+                  )}
+                </div>
 
-                <button
-                  onClick={handleBookmark}
-                  disabled={bookmarkLoading}
-                  className={`py-3 px-3.5 rounded-2xl font-semibold text-xs sm:text-sm border flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50 ${
-                    bookmarked
-                      ? "bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-900"
-                      : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-amber-600 dark:hover:text-amber-400"
-                  }`}
-                >
-                  <Bookmark className={`w-4 h-4 ${bookmarked ? "fill-amber-500 text-amber-500" : ""}`} />
-                  {bookmarked ? "Bookmarked" : "Save Note"}
-                </button>
+                <div className="flex items-center justify-between gap-2 pt-1">
+                  <StarRating
+                    value={rating}
+                    userRating={userRating}
+                    onRate={handleRateNote}
+                    disabled={ratingSubmitting}
+                    size="lg"
+                  />
+
+                  <button
+                    onClick={handleBookmark}
+                    disabled={bookmarkLoading}
+                    className={`py-2 px-3.5 rounded-xl font-semibold text-xs border flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs disabled:opacity-50 ${
+                      bookmarked
+                        ? "bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200 border-amber-300 dark:border-amber-700"
+                        : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-amber-600"
+                    }`}
+                  >
+                    <Bookmark className={`w-3.5 h-3.5 ${bookmarked ? "fill-amber-500 text-amber-500" : ""}`} />
+                    <span>{bookmarked ? "Saved" : "Save"}</span>
+                  </button>
+                </div>
               </div>
 
               <button
@@ -348,6 +564,15 @@ export default function NoteDetailsPage() {
                 View Contributor Profile
               </Link>
             )}
+
+            {/* Report Button */}
+            <button
+              onClick={() => setIsReportOpen(true)}
+              className="w-full py-2.5 px-3 rounded-xl border border-dashed border-rose-200 dark:border-rose-900/40 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <Flag className="w-3.5 h-3.5" />
+              <span>Report this Material</span>
+            </button>
           </div>
         </div>
       </div>
@@ -365,6 +590,13 @@ export default function NoteDetailsPage() {
           </div>
         </div>
       )}
+
+      {/* Report Modal */}
+      <ReportNoteModal
+        note={note}
+        isOpen={isReportOpen}
+        onClose={() => setIsReportOpen(false)}
+      />
     </div>
   );
 }

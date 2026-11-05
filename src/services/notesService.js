@@ -12,7 +12,9 @@ import {
   deleteDoc,
   increment,
   serverTimestamp,
-  orderBy
+  orderBy,
+  limit,
+  startAfter
 } from "firebase/firestore";
 
 export async function fetchApprovedNotes(filters = {}) {
@@ -69,6 +71,56 @@ export async function fetchApprovedNotes(filters = {}) {
   } catch (error) {
     console.error("Error fetching approved notes:", error);
     return [];
+  }
+}
+
+/**
+ * Fetch approved notes with cursor pagination and index fallback.
+ */
+export async function fetchApprovedNotesPaginated({ branch = "", limitSize = 12, lastDoc = null } = {}) {
+  try {
+    let constraints = [
+      where("status", "==", "approved"),
+      orderBy("createdAt", "desc"),
+      limit(limitSize)
+    ];
+
+    if (branch) {
+      constraints.unshift(where("branch", "==", branch));
+    }
+
+    if (lastDoc) {
+      constraints.push(startAfter(lastDoc));
+    }
+
+    const q = query(collection(db, "notes"), ...constraints);
+    const snapshot = await getDocs(q);
+
+    const notes = snapshot.docs.map((doc) => {
+      const data = doc.data();
+      const docUrl = data.pdfUrl || data.fileUrl || "";
+      return {
+        id: doc.id,
+        ...data,
+        pdfUrl: docUrl,
+        fileUrl: docUrl,
+        _doc: doc
+      };
+    });
+
+    const lastVisible = snapshot.docs[snapshot.docs.length - 1] || null;
+    const hasMore = snapshot.docs.length === limitSize;
+
+    return { notes, lastVisible, hasMore };
+  } catch (err) {
+    console.info("fetchApprovedNotesPaginated notice (using resilient query):", err?.message || err);
+    const all = await fetchApprovedNotes({ branch });
+    return {
+      notes: all.slice(0, limitSize),
+      lastVisible: null,
+      hasMore: all.length > limitSize,
+      allFallback: all
+    };
   }
 }
 
@@ -213,7 +265,9 @@ export async function createNoteSubmission(noteData) {
       status: "pending",
       views: 0,
       downloads: 0,
-      likes: 0,
+      rating: 0,
+      ratingsCount: 0,
+      ratingSum: 0,
       createdAt: serverTimestamp()
     });
     return docRef.id;
@@ -222,3 +276,5 @@ export async function createNoteSubmission(noteData) {
     throw error;
   }
 }
+
+export { rateNote, getUserRatingForNote, formatRating } from "./ratingService";
