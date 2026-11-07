@@ -111,6 +111,10 @@ export default function VerifyEmailPage() {
           </button>
         </div>
 
+        {/* 
+          TODO: [PRE-DEPLOYMENT PRODUCTION CHECKLIST] 
+          Remove 'Skip for now' before final production deployment to enforce strict email verification. 
+        */}
         <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
           <Link
             to="/"

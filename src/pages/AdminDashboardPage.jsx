@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useAuth } from "../context/AuthContext";
+import { useToast } from "../context/ToastContext";
 import { db } from "../services/firebase";
 import {
   collection,
@@ -39,6 +40,7 @@ import {
 
 export default function AdminDashboardPage() {
   const { currentUser } = useAuth();
+  const { addToast } = useToast();
   const [activeTab, setActiveTab] = useState("pending");
   const [loading, setLoading] = useState(true);
 
@@ -52,6 +54,10 @@ export default function AdminDashboardPage() {
   // Reject Modal
   const [rejectModalNote, setRejectModalNote] = useState(null);
   const [rejectReason, setRejectReason] = useState("");
+
+  // Remove User Confirmation Modal
+  const [userToDelete, setUserToDelete] = useState(null);
+  const [deletingUser, setDeletingUser] = useState(false);
 
   // Search filter
   const [search, setSearch] = useState("");
@@ -289,6 +295,31 @@ export default function AdminDashboardPage() {
       setNoteReports((prev) => prev.filter((r) => r.id !== reportId));
     } catch (err) {
       console.error("Delete report record error:", err);
+    }
+  }
+
+  async function handleConfirmDeleteUser() {
+    if (!userToDelete) return;
+    if (userToDelete.id === currentUser?.uid) {
+      if (addToast) addToast("You cannot remove your own active admin account.", "error");
+      return;
+    }
+
+    setDeletingUser(true);
+    try {
+      await deleteDoc(doc(db, "users", userToDelete.id));
+      setUsersList((prev) => prev.filter((u) => u.id !== userToDelete.id));
+      if (addToast) {
+        addToast(`User ${userToDelete.name || userToDelete.email || "Account"} was removed successfully.`, "success");
+      }
+      setUserToDelete(null);
+    } catch (err) {
+      console.error("Failed to delete user:", err);
+      if (addToast) {
+        addToast("Failed to remove user. Please check your permissions and try again.", "error");
+      }
+    } finally {
+      setDeletingUser(false);
     }
   }
 
@@ -559,34 +590,61 @@ export default function AdminDashboardPage() {
                     <th className="py-3 px-4">Email</th>
                     <th className="py-3 px-4">College</th>
                     <th className="py-3 px-4">Branch</th>
-                    <th className="py-3 px-4 rounded-r-xl">Role</th>
+                    <th className="py-3 px-4">Role</th>
+                    <th className="py-3 px-4 rounded-r-xl text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {filteredUsersList.map((u) => (
-                    <tr key={u.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
-                      <td className="py-4 px-4 font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 font-bold flex items-center justify-center text-xs">
-                          {u.name?.charAt(0)?.toUpperCase() || "U"}
-                        </div>
-                        {u.name || "Student"}
-                      </td>
-                      <td className="py-4 px-4 text-xs">{u.email}</td>
-                      <td className="py-4 px-4 text-xs">{u.college || "-"}</td>
-                      <td className="py-4 px-4 text-xs">{u.branch || "-"}</td>
-                      <td className="py-4 px-4 text-xs">
-                        <span
-                          className={`px-2.5 py-0.5 rounded-full font-semibold ${
-                            u.role === "admin"
-                              ? "bg-amber-100 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300"
-                              : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
-                          }`}
-                        >
-                          {u.role || "user"}
-                        </span>
+                  {filteredUsersList.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="text-center py-12 text-slate-400 dark:text-slate-500 text-sm">
+                        {search.trim()
+                          ? `No registered users matching "${search.trim()}".`
+                          : "No registered users found."}
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    filteredUsersList.map((u) => (
+                      <tr key={u.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
+                        <td className="py-4 px-4 font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 font-bold flex items-center justify-center text-xs">
+                            {u.name?.charAt(0)?.toUpperCase() || "U"}
+                          </div>
+                          {u.name || "Student"}
+                        </td>
+                        <td className="py-4 px-4 text-xs">{u.email}</td>
+                        <td className="py-4 px-4 text-xs">{u.college || "-"}</td>
+                        <td className="py-4 px-4 text-xs">{u.branch || "-"}</td>
+                        <td className="py-4 px-4 text-xs">
+                          <span
+                            className={`px-2.5 py-0.5 rounded-full font-semibold ${
+                              u.role === "admin"
+                                ? "bg-amber-100 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300"
+                                : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
+                            }`}
+                          >
+                            {u.role || "user"}
+                          </span>
+                        </td>
+                        <td className="py-4 px-4 text-right">
+                          {u.id === currentUser?.uid ? (
+                            <span className="text-xs text-slate-400 dark:text-slate-500 font-medium italic">
+                              You (Current Admin)
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => setUserToDelete(u)}
+                              className="px-2.5 py-1.5 rounded-lg text-slate-400 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 border border-transparent hover:border-red-200 dark:hover:border-red-900/50 transition-all cursor-pointer inline-flex items-center gap-1.5 text-xs font-semibold"
+                              title="Remove user account"
+                            >
+                              <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                              <span>Remove</span>
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -781,6 +839,55 @@ export default function AdminDashboardPage() {
               className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-semibold cursor-pointer"
             >
               Confirm Rejection
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Remove User Confirmation Modal */}
+      <Modal
+        isOpen={!!userToDelete}
+        onClose={() => !deletingUser && setUserToDelete(null)}
+        title="Remove User Account"
+      >
+        <div className="space-y-4">
+          <div className="p-3.5 rounded-2xl bg-red-50 dark:bg-red-950/30 border border-red-200/80 dark:border-red-900/50 flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <h4 className="text-sm font-bold text-red-900 dark:text-red-200">
+                Permanently remove this user?
+              </h4>
+              <p className="text-xs text-red-700 dark:text-red-300 leading-relaxed">
+                This will delete the student profile for{" "}
+                <span className="font-semibold text-slate-900 dark:text-white">
+                  {userToDelete?.name || "Student"}
+                </span>{" "}
+                ({userToDelete?.email || "No email"}). Their public profile, followers, and account data will be removed.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              onClick={() => setUserToDelete(null)}
+              disabled={deletingUser}
+              className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleConfirmDeleteUser}
+              disabled={deletingUser}
+              className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-semibold disabled:opacity-50 flex items-center gap-1.5 cursor-pointer shadow-sm shadow-red-600/20"
+            >
+              {deletingUser ? (
+                <span>Removing user...</span>
+              ) : (
+                <>
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Confirm Remove User</span>
+                </>
+              )}
             </button>
           </div>
         </div>
