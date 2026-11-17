@@ -26,6 +26,7 @@ import {
   Star
 } from "lucide-react";
 import { getOptimizedImageUrl } from "../utils/imageUtils";
+import UserAvatar from "../components/common/UserAvatar";
 
 export default function DiscoverPage() {
   const { currentUser } = useAuth();
@@ -202,21 +203,13 @@ export default function DiscoverPage() {
                     #{idx + 1}
                   </div>
 
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-bold text-sm flex items-center justify-center shrink-0 overflow-hidden shadow-2xs">
-                    {c.profilePicture ? (
-                      <img
-                        src={getOptimizedImageUrl(c.profilePicture, { width: 96, height: 96 })}
-                        alt={c.name}
-                        loading="lazy"
-                        decoding="async"
-                        width="48"
-                        height="48"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      (c.name || "U").charAt(0).toUpperCase()
-                    )}
-                  </div>
+                  <UserAvatar
+                    src={c.profilePicture}
+                    name={c.name}
+                    size="lg"
+                    className="shadow-2xs"
+                    sizePx={96}
+                  />
 
                   <div className="min-w-0 flex-1">
                     <Link
@@ -283,21 +276,13 @@ export default function DiscoverPage() {
               >
                 <div className="space-y-4 text-center">
                   {/* Avatar */}
-                  <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-bold flex items-center justify-center mx-auto shadow-md ring-4 ring-blue-50 dark:ring-blue-950/40 overflow-hidden">
-                    {user.profilePicture ? (
-                      <img
-                        src={getOptimizedImageUrl(user.profilePicture, { width: 160, height: 160 })}
-                        alt={user.name}
-                        loading="lazy"
-                        decoding="async"
-                        width="80"
-                        height="80"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      user.name?.charAt(0)?.toUpperCase() || "U"
-                    )}
-                  </div>
+                  <UserAvatar
+                    src={user.profilePicture}
+                    name={user.name}
+                    size="xl"
+                    className="mx-auto shadow-md ring-4 ring-blue-50 dark:ring-blue-950/40"
+                    sizePx={160}
+                  />
 
                   {/* Name & Branch */}
                   <div>

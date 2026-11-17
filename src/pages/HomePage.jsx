@@ -26,6 +26,7 @@ import {
 import { getHomePageMetrics, getCachedHomePageMetrics } from "../services/homeService";
 import { getOptimizedImageUrl } from "../utils/imageUtils";
 import AddReviewModal from "../components/reviews/AddReviewModal";
+import UserAvatar from "../components/common/UserAvatar";
 
 const baseBranches = [
   { name: "Computer Science", code: "CSE", icon: <Laptop className="w-6 h-6 text-blue-600" /> },
@@ -323,23 +324,14 @@ export default function HomePage() {
                   </div>
 
                   {/* Author */}
-                  <div className="flex items-center gap-3 pt-4 border-t border-slate-100">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-bold flex items-center justify-center text-sm shadow-sm overflow-hidden shrink-0">
-                      {typeof (r.authorAvatar || r.avatar) === "string" &&
-                        (r.authorAvatar || r.avatar).startsWith("http") ? (
-                        <img
-                          src={getOptimizedImageUrl(r.authorAvatar || r.avatar, { width: 80, height: 80 })}
-                          alt={r.authorName || r.author || "Student"}
-                          loading="lazy"
-                          decoding="async"
-                          width="40"
-                          height="40"
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        (r.authorName || r.author)?.charAt(0)?.toUpperCase() || "S"
-                      )}
-                    </div>
+                  <div className="flex items-center gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                    <UserAvatar
+                      src={r.authorAvatar || r.avatar}
+                      name={r.authorName || r.author}
+                      size="md"
+                      className="w-10 h-10 shadow-sm"
+                      sizePx={80}
+                    />
                     <div className="min-w-0">
                       <h4 className="text-sm font-bold text-slate-900 truncate">
                         {r.authorName || r.author}

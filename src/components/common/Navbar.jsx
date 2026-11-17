@@ -3,6 +3,7 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useNotifications } from "../../context/NotificationContext";
 import ThemeToggle from "./ThemeToggle";
+import UserAvatar from "./UserAvatar";
 import {
   BookOpen,
   Bell,
@@ -198,17 +199,13 @@ export default function Navbar() {
                   onClick={() => setUserDropdownOpen(!userDropdownOpen)}
                   className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                 >
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-semibold flex items-center justify-center text-sm shadow-sm ring-2 ring-white dark:ring-slate-800">
-                    {userProfile?.profilePicture ? (
-                      <img
-                        src={userProfile.profilePicture}
-                        alt="Avatar"
-                        className="w-full h-full rounded-full object-cover"
-                      />
-                    ) : (
-                      userProfile?.name?.charAt(0)?.toUpperCase() || "U"
-                    )}
-                  </div>
+                  <UserAvatar
+                    src={userProfile?.profilePicture || currentUser?.photoURL}
+                    name={userProfile?.name || currentUser?.displayName || currentUser?.email?.split("@")[0] || "Student"}
+                    size="md"
+                    className="ring-2 ring-white dark:ring-slate-800"
+                    sizePx={72}
+                  />
                   <ChevronDown className="w-4 h-4 text-slate-500 dark:text-slate-400 hidden sm:block" />
                 </button>
 

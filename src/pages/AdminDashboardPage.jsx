@@ -15,6 +15,7 @@ import {
 } from "firebase/firestore";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 import Modal from "../components/common/Modal";
+import UserAvatar from "../components/common/UserAvatar";
 import {
   Clock,
   CheckCircle,
@@ -607,9 +608,12 @@ export default function AdminDashboardPage() {
                     filteredUsersList.map((u) => (
                       <tr key={u.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
                         <td className="py-4 px-4 font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 font-bold flex items-center justify-center text-xs">
-                            {u.name?.charAt(0)?.toUpperCase() || "U"}
-                          </div>
+                          <UserAvatar
+                            src={u.profilePicture}
+                            name={u.name}
+                            size="sm"
+                            sizePx={64}
+                          />
                           {u.name || "Student"}
                         </td>
                         <td className="py-4 px-4 text-xs">{u.email}</td>

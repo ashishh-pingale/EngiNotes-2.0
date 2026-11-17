@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { fetchUserBookmarkedNotes } from "../services/bookmarkService";
 import { getOptimizedImageUrl } from "../utils/imageUtils";
+import UserAvatar from "../components/common/UserAvatar";
 
 export default function ProfilePage() {
   const { uid: paramUid } = useParams();
@@ -217,7 +218,7 @@ export default function ProfilePage() {
   const branch = displayData?.branch;
   const year = displayData?.year;
   const bio = displayData?.bio;
-  const avatar = displayData?.profilePicture;
+  const avatar = displayData?.profilePicture || (isOwnProfile ? currentUser?.photoURL : "");
 
   const uploadsCount = uploadedNotes.length;
   const totalDownloads = uploadedNotes.reduce((acc, n) => acc + (n.downloads || 0), 0);
@@ -259,21 +260,13 @@ export default function ProfilePage() {
       <div className="bg-white dark:bg-slate-900/90 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-6 sm:p-10 shadow-sm relative overflow-hidden">
         <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 text-center sm:text-left">
           {/* Avatar */}
-          <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-extrabold text-3xl flex items-center justify-center shadow-lg ring-4 ring-blue-50 dark:ring-slate-800 shrink-0">
-            {avatar ? (
-              <img
-                src={getOptimizedImageUrl(avatar, { width: 224, height: 224 })}
-                alt="Profile"
-                loading="lazy"
-                decoding="async"
-                width="112"
-                height="112"
-                className="w-full h-full rounded-full object-cover"
-              />
-            ) : (
-              name.charAt(0).toUpperCase()
-            )}
-          </div>
+          <UserAvatar
+            src={avatar}
+            name={name}
+            size="2xl"
+            className="shadow-lg ring-4 ring-blue-50 dark:ring-slate-800"
+            sizePx={224}
+          />
 
           {/* Details */}
           <div className="flex-1 space-y-3">
@@ -577,21 +570,13 @@ export default function ProfilePage() {
                     }}
                     className="flex items-center gap-3.5 flex-1 min-w-0 cursor-pointer"
                   >
-                    <div className="w-11 h-11 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-bold text-sm flex items-center justify-center shrink-0 overflow-hidden shadow-sm ring-2 ring-blue-50 dark:ring-slate-800">
-                      {u.profilePicture ? (
-                        <img
-                          src={getOptimizedImageUrl(u.profilePicture, { width: 88, height: 88 })}
-                          alt={displayName}
-                          loading="lazy"
-                          decoding="async"
-                          width="44"
-                          height="44"
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        displayName.charAt(0).toUpperCase()
-                      )}
-                    </div>
+                    <UserAvatar
+                      src={u.profilePicture}
+                      name={displayName}
+                      size="lg"
+                      className="w-11 h-11 text-sm shadow-sm ring-2 ring-blue-50 dark:ring-slate-800"
+                      sizePx={88}
+                    />
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-bold text-slate-900 dark:text-white truncate hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                         {displayName}

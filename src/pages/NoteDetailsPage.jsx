@@ -10,6 +10,7 @@ import { rateNote, getUserRatingForNote } from "../services/ratingService";
 import StarRating from "../components/common/StarRating";
 import { downloadNotePDF } from "../utils/downloadUtils";
 import { getOptimizedImageUrl } from "../utils/imageUtils";
+import UserAvatar from "../components/common/UserAvatar";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import {
@@ -377,21 +378,13 @@ export default function NoteDetailsPage() {
 
                   return (
                     <div key={c.id} className="pt-3.5 first:pt-0 flex items-start gap-3">
-                      <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-2xs overflow-hidden">
-                        {c.authorAvatar ? (
-                          <img
-                            src={getOptimizedImageUrl(c.authorAvatar, { width: 72, height: 72 })}
-                            alt={c.authorName || "User"}
-                            loading="lazy"
-                            decoding="async"
-                            width="36"
-                            height="36"
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          (c.authorName || "S").charAt(0).toUpperCase()
-                        )}
-                      </div>
+                      <UserAvatar
+                        src={c.authorAvatar}
+                        name={c.authorName}
+                        size="md"
+                        className="shadow-2xs"
+                        sizePx={72}
+                      />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2 truncate">
@@ -547,21 +540,13 @@ export default function NoteDetailsPage() {
               Uploaded By
             </h4>
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-bold flex items-center justify-center text-lg shadow-sm shrink-0">
-                {note.uploaderAvatar ? (
-                  <img
-                    src={getOptimizedImageUrl(note.uploaderAvatar, { width: 96, height: 96 })}
-                    alt="Uploader"
-                    loading="lazy"
-                    decoding="async"
-                    width="48"
-                    height="48"
-                    className="w-full h-full rounded-full object-cover"
-                  />
-                ) : (
-                  note.uploaderName?.charAt(0)?.toUpperCase() || "U"
-                )}
-              </div>
+              <UserAvatar
+                src={note.uploaderAvatar}
+                name={note.uploaderName}
+                size="lg"
+                className="shadow-sm"
+                sizePx={96}
+              />
               <div className="min-w-0">
                 <h3 className="font-bold text-slate-900 dark:text-white truncate">
                   {note.uploaderName || "Anonymous Student"}

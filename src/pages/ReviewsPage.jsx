@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { fetchReviews } from "../services/reviewService";
 import { getOptimizedImageUrl } from "../utils/imageUtils";
+import UserAvatar from "../components/common/UserAvatar";
 import AddReviewModal from "../components/reviews/AddReviewModal";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 import { ReviewCardSkeletonGrid } from "../components/common/Skeletons";
@@ -169,21 +170,13 @@ export default function ReviewsPage() {
 
                 {/* Author Info */}
                 <div className="flex items-center gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-bold flex items-center justify-center text-xs shrink-0 shadow-2xs overflow-hidden">
-                    {r.authorAvatar && r.authorAvatar.startsWith("http") ? (
-                      <img
-                        src={getOptimizedImageUrl(r.authorAvatar, { width: 72, height: 72 })}
-                        alt={r.authorName || "Student"}
-                        loading="lazy"
-                        decoding="async"
-                        width="36"
-                        height="36"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      r.authorName?.charAt(0)?.toUpperCase() || "S"
-                    )}
-                  </div>
+                  <UserAvatar
+                    src={r.authorAvatar}
+                    name={r.authorName}
+                    size="md"
+                    className="shadow-2xs"
+                    sizePx={72}
+                  />
                   <div className="min-w-0">
                     <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">
                       {r.authorName || "Engineering Student"}

@@ -1,9 +1,10 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { db } from "../services/firebase";
 import { doc, updateDoc } from "firebase/firestore";
 import { uploadProfileImage } from "../services/cloudinary";
+import UserAvatar from "../components/common/UserAvatar";
 import {
   Camera,
   ArrowLeft,
@@ -22,13 +23,27 @@ export default function EditProfilePage() {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
 
-  const [name, setName] = useState(userProfile?.name || "");
+  const [name, setName] = useState(userProfile?.name || currentUser?.displayName || "");
   const [college, setCollege] = useState(userProfile?.college || "");
   const [branch, setBranch] = useState(userProfile?.branch || "CSE");
   const [year, setYear] = useState(userProfile?.year || "1");
   const [bio, setBio] = useState(userProfile?.bio || "");
-  const [avatarPreview, setAvatarPreview] = useState(userProfile?.profilePicture || "");
+  const [avatarPreview, setAvatarPreview] = useState(userProfile?.profilePicture || currentUser?.photoURL || "");
   const [avatarFile, setAvatarFile] = useState(null);
+
+  // Sync state if userProfile or currentUser loads after initial render
+  useEffect(() => {
+    if (userProfile || currentUser) {
+      setName((prev) => prev || userProfile?.name || currentUser?.displayName || "");
+      setCollege((prev) => prev || userProfile?.college || "");
+      if (userProfile?.branch) setBranch(userProfile.branch);
+      if (userProfile?.year) setYear(userProfile.year);
+      setBio((prev) => prev || userProfile?.bio || "");
+      if (!avatarFile) {
+        setAvatarPreview((prev) => prev || userProfile?.profilePicture || currentUser?.photoURL || "");
+      }
+    }
+  }, [userProfile, currentUser, avatarFile]);
 
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
@@ -126,17 +141,13 @@ export default function EditProfilePage() {
           {/* Avatar Edit */}
           <div className="flex flex-col sm:flex-row items-center gap-6 pb-6 border-b border-slate-100 dark:border-slate-800">
             <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
-              <div className="w-24 h-24 rounded-full bg-blue-600 text-white font-extrabold text-2xl flex items-center justify-center overflow-hidden ring-4 ring-blue-50 dark:ring-blue-950/40 shadow-md">
-                {avatarPreview ? (
-                  <img
-                    src={avatarPreview}
-                    alt="Preview"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  name.charAt(0)?.toUpperCase() || "U"
-                )}
-              </div>
+              <UserAvatar
+                src={avatarPreview}
+                name={name || userProfile?.name || currentUser?.displayName || currentUser?.email?.split("@")[0] || "Student"}
+                size="2xl"
+                className="w-24 h-24 text-2xl ring-4 ring-blue-50 dark:ring-blue-950/40 shadow-md"
+                sizePx={192}
+              />
               <div className="absolute inset-0 bg-slate-900/40 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity">
                 <Camera className="w-6 h-6" />
               </div>

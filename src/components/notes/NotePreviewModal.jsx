@@ -25,6 +25,7 @@ import {
   Flag
 } from "lucide-react";
 import ReportNoteModal from "./ReportNoteModal";
+import UserAvatar from "../common/UserAvatar";
 
 export default function NotePreviewModal({ note, isOpen, onClose }) {
   const { currentUser } = useAuth();
@@ -151,17 +152,13 @@ export default function NotePreviewModal({ note, isOpen, onClose }) {
 
             {/* Uploader Card */}
             <div className="p-3 bg-slate-50/70 dark:bg-slate-800/60 rounded-xl border border-slate-100 dark:border-slate-800 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center text-sm shrink-0">
-                {note.uploaderAvatar ? (
-                  <img
-                    src={note.uploaderAvatar}
-                    alt="Uploader"
-                    className="w-full h-full rounded-full object-cover"
-                  />
-                ) : (
-                  note.uploaderName?.charAt(0)?.toUpperCase() || "U"
-                )}
-              </div>
+              <UserAvatar
+                src={note.uploaderAvatar}
+                name={note.uploaderName}
+                size="md"
+                className="w-10 h-10 shadow-2xs"
+                sizePx={80}
+              />
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">
                   {note.uploaderName || "Anonymous"}

@@ -10,7 +10,7 @@ import {
   GoogleAuthProvider,
   signInWithPopup
 } from "firebase/auth";
-import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 
 const AuthContext = createContext(null);
 
@@ -32,22 +32,27 @@ export function AuthProvider({ children }) {
       const snap = await getDoc(userRef);
       if (snap.exists()) {
         const data = snap.data();
+        if (!data.profilePicture && user.photoURL) {
+          data.profilePicture = user.photoURL;
+        }
         setUserProfile(data);
         setIsAdmin(data.role === "admin");
       } else {
         setUserProfile({
-          name: user.displayName || user.email?.split("@")[0] || "User",
+          name: user.displayName || user.email?.split("@")[0] || "Student",
           email: user.email,
-          role: "user"
+          role: "user",
+          profilePicture: user.photoURL || ""
         });
         setIsAdmin(false);
       }
     } catch (err) {
       console.warn("Failed to load user profile document:", err);
       setUserProfile({
-        name: user.displayName || user.email?.split("@")[0] || "User",
+        name: user.displayName || user.email?.split("@")[0] || "Student",
         email: user.email,
-        role: "user"
+        role: "user",
+        profilePicture: user.photoURL || ""
       });
       setIsAdmin(false);
     }
@@ -132,6 +137,16 @@ export function AuthProvider({ children }) {
           profilePicture: user.photoURL || "",
           createdAt: serverTimestamp()
         });
+      } else {
+        // If user already existed but profilePicture was empty and Google provides photoURL, update it
+        const existingData = snap.data();
+        if (!existingData.profilePicture && user.photoURL) {
+          try {
+            await updateDoc(userRef, { profilePicture: user.photoURL });
+          } catch (updateErr) {
+            console.warn("Could not backfill profilePicture:", updateErr);
+          }
+        }
       }
     } catch (e) {
       console.warn("Error creating/verifying Google user profile in Firestore:", e);
