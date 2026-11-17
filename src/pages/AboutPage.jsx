@@ -43,7 +43,7 @@ const faqs = [
   },
   {
     q: "What file formats are supported?",
-    a: "We currently support high-resolution PDF documents up to 25 MB in size."
+    a: "We currently support high-resolution PDF documents up to 15 MB in size."
   }
 ];
 

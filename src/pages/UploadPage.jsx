@@ -1,6 +1,7 @@
 import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useToast } from "../context/ToastContext";
 import { uploadNotePdf } from "../services/cloudinary";
 import { createNoteSubmission } from "../services/notesService";
 import Modal from "../components/common/Modal";
@@ -19,8 +20,11 @@ const semesters = ["1", "2", "3", "4", "5", "6", "7", "8"];
 
 export default function UploadPage() {
   const { currentUser, userProfile } = useAuth();
+  const { showToast } = useToast();
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
+
+  const MAX_FILE_SIZE_BYTES = 15 * 1024 * 1024; // 15 MB limit
 
   const [file, setFile] = useState(null);
   const [dragActive, setDragActive] = useState(false);
@@ -43,11 +47,18 @@ export default function UploadPage() {
   function handleFileSelect(selectedFile) {
     if (!selectedFile) return;
     if (selectedFile.type !== "application/pdf") {
-      setErrorMsg("Please upload a valid PDF document (.pdf).");
+      const msg = "Please upload a valid PDF document (.pdf).";
+      setErrorMsg(msg);
+      if (showToast) showToast(msg, "error");
       return;
     }
-    if (selectedFile.size > 25 * 1024 * 1024) {
-      setErrorMsg("File size exceeds 25 MB. Please choose a smaller file.");
+    if (selectedFile.size > MAX_FILE_SIZE_BYTES) {
+      const sizeMB = (selectedFile.size / (1024 * 1024)).toFixed(1);
+      const msg = `File size (${sizeMB} MB) exceeds the 15 MB limit. Please compress or select a smaller PDF.`;
+      setErrorMsg(msg);
+      if (showToast) showToast(msg, "error");
+      setFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
     setErrorMsg("");
@@ -77,6 +88,12 @@ export default function UploadPage() {
     e.preventDefault();
     if (!file) {
       setErrorMsg("Please select a PDF file to upload.");
+      return;
+    }
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      const msg = "File size exceeds 15 MB. Please choose a smaller PDF.";
+      setErrorMsg(msg);
+      if (showToast) showToast(msg, "error");
       return;
     }
     if (!title.trim() || !subject.trim() || !university.trim()) {
@@ -215,7 +232,7 @@ export default function UploadPage() {
                     Click to browse or drag & drop your PDF
                   </p>
                   <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-                    Only PDF files up to 25 MB are accepted
+                    Only PDF files up to 15 MB are accepted
                   </p>
                 </div>
               </div>
