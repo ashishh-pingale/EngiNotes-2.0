@@ -50,13 +50,24 @@ export async function fetchApprovedNotes(filters = {}) {
       notes = notes.filter(n => n.subject && n.subject.toLowerCase().includes(targetSub));
     }
 
+    if (filters.university && filters.university !== "all") {
+      const targetUni = filters.university.toLowerCase();
+      notes = notes.filter(n => {
+        const text = `${n.university || ""} ${n.uploaderCollege || ""} ${n.college || ""}`.toLowerCase();
+        return text.includes(targetUni);
+      });
+    }
+
     if (filters.search) {
       const s = filters.search.toLowerCase();
       notes = notes.filter(n =>
         (n.title && n.title.toLowerCase().includes(s)) ||
         (n.subject && n.subject.toLowerCase().includes(s)) ||
         (n.uploaderName && n.uploaderName.toLowerCase().includes(s)) ||
-        (n.branch && n.branch.toLowerCase().includes(s))
+        (n.branch && n.branch.toLowerCase().includes(s)) ||
+        (n.university && n.university.toLowerCase().includes(s)) ||
+        (n.uploaderCollege && n.uploaderCollege.toLowerCase().includes(s)) ||
+        (n.college && n.college.toLowerCase().includes(s))
       );
     }
 

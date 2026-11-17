@@ -5,11 +5,23 @@ import NoteCard from "../components/notes/NoteCard";
 import NotePreviewModal from "../components/notes/NotePreviewModal";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 import { NoteCardSkeletonGrid } from "../components/common/Skeletons";
-import { Search, Filter, RefreshCw, BookOpen, X, ChevronDown } from "lucide-react";
+import { Search, Filter, RefreshCw, BookOpen, X, ChevronDown, GraduationCap } from "lucide-react";
 
 const branches = ["CSE", "IT", "AIML", "AIDS", "ECE", "Mechanical", "Civil", "Electrical"];
 const years = ["1", "2", "3", "4"];
 const semesters = ["1", "2", "3", "4", "5", "6", "7", "8"];
+
+export const MAJOR_UNIVERSITIES = [
+  { id: "", label: "All Universities" },
+  { id: "sppu", label: "SPPU (Pune)", match: ["sppu", "pune", "savitribai"] },
+  { id: "mumbai", label: "Mumbai Univ (MU)", match: ["mumbai", "mu"] },
+  { id: "vtu", label: "VTU", match: ["vtu", "visvesvaraya"] },
+  { id: "aktu", label: "AKTU", match: ["aktu", "abdul kalam", "uptu"] },
+  { id: "anna", label: "Anna University", match: ["anna university", "anna univ"] },
+  { id: "gtu", label: "GTU", match: ["gtu", "gujarat"] },
+  { id: "rtu", label: "RTU", match: ["rtu", "rajasthan tech"] },
+  { id: "autonomous", label: "Autonomous", match: ["autonomous"] }
+];
 
 export default function BrowsePage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -21,14 +33,14 @@ export default function BrowsePage() {
   const [branch, setBranch] = useState(searchParams.get("branch") || "");
   const [year, setYear] = useState(searchParams.get("year") || "");
   const [semester, setSemester] = useState(searchParams.get("semester") || "");
-  const [selectedSubject, setSelectedSubject] = useState("");
+  const [selectedUniversity, setSelectedUniversity] = useState(searchParams.get("university") || "");
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
   // Pagination state
   const [visibleCount, setVisibleCount] = useState(12);
   const [loadingMore, setLoadingMore] = useState(false);
 
-  const advancedCount = (semester ? 1 : 0) + (selectedSubject ? 1 : 0);
+  const advancedCount = (semester ? 1 : 0) + (selectedUniversity ? 1 : 0);
 
   // Preview Modal
   const [previewNote, setPreviewNote] = useState(null);
@@ -47,21 +59,6 @@ export default function BrowsePage() {
       setLoading(false);
     }
   }
-
-  // Extract unique popular subjects from all notes
-  const availableSubjects = useMemo(() => {
-    const map = new Map();
-    allNotes.forEach((n) => {
-      if (n.subject && n.subject.trim()) {
-        const sub = n.subject.trim();
-        map.set(sub, (map.get(sub) || 0) + 1);
-      }
-    });
-    return Array.from(map.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 8)
-      .map(([sub]) => sub);
-  }, [allNotes]);
 
   // Handle note param from URL (e.g. notifications)
   useEffect(() => {
@@ -91,7 +88,7 @@ export default function BrowsePage() {
   // Reset pagination when filter criteria change
   useEffect(() => {
     setVisibleCount(12);
-  }, [search, branch, year, semester, selectedSubject]);
+  }, [search, branch, year, semester, selectedUniversity]);
 
   // Real-time automatic letter-wise filter (instant search, resets to default when erased)
   const filteredNotes = useMemo(() => {
@@ -105,10 +102,13 @@ export default function BrowsePage() {
       result = result.filter((n) => String(n.semester) === String(semester));
     }
 
-    if (selectedSubject) {
-      result = result.filter(
-        (n) => n.subject && n.subject.toLowerCase() === selectedSubject.toLowerCase()
-      );
+    if (selectedUniversity) {
+      const selectedObj = MAJOR_UNIVERSITIES.find((u) => u.id === selectedUniversity);
+      const matchKeywords = selectedObj?.match || [selectedUniversity.toLowerCase()];
+      result = result.filter((n) => {
+        const uniText = `${n.university || ""} ${n.uploaderCollege || ""} ${n.college || ""}`.toLowerCase();
+        return matchKeywords.some((kw) => uniText.includes(kw));
+      });
     }
 
     if (search.trim()) {
@@ -120,12 +120,13 @@ export default function BrowsePage() {
           (n.uploaderName && n.uploaderName.toLowerCase().includes(s)) ||
           (n.branch && n.branch.toLowerCase().includes(s)) ||
           (n.university && n.university.toLowerCase().includes(s)) ||
+          (n.uploaderCollege && n.uploaderCollege.toLowerCase().includes(s)) ||
           (n.college && n.college.toLowerCase().includes(s))
       );
     }
 
     return result;
-  }, [allNotes, year, semester, selectedSubject, search]);
+  }, [allNotes, year, semester, selectedUniversity, search]);
 
   const displayedNotes = useMemo(() => {
     return filteredNotes.slice(0, visibleCount);
@@ -148,7 +149,7 @@ export default function BrowsePage() {
     setBranch("");
     setYear("");
     setSemester("");
-    setSelectedSubject("");
+    setSelectedUniversity("");
     setSearchParams({});
   }
 
@@ -229,7 +230,7 @@ export default function BrowsePage() {
                 ? "bg-blue-50 dark:bg-blue-950/60 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 shadow-2xs font-bold"
                 : "border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
             }`}
-            title={showAdvancedFilters ? "Hide semester & subject filters" : "Show semester & subject filters"}
+            title={showAdvancedFilters ? "Hide semester & university filters" : "Show semester & university filters"}
             aria-expanded={showAdvancedFilters}
           >
             <Filter className="w-4 h-4 text-blue-600 dark:text-blue-400" />
@@ -247,7 +248,7 @@ export default function BrowsePage() {
           </button>
 
           {/* Reset Button */}
-          {(branch || year || semester || selectedSubject || search) && (
+          {(branch || year || semester || selectedUniversity || search) && (
             <button
               type="button"
               onClick={handleResetFilters}
@@ -260,7 +261,7 @@ export default function BrowsePage() {
           )}
         </form>
 
-        {/* Expandable Advanced Filters (Semester & Subjects) */}
+        {/* Expandable Advanced Filters (Semester & Centralized Universities) */}
         {showAdvancedFilters && (
           <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 space-y-3 animate-in fade-in slide-in-from-top-1 duration-200">
             {/* Semester Segmented Filter Bar */}
@@ -297,31 +298,39 @@ export default function BrowsePage() {
               </div>
             </div>
 
-            {/* Dynamic Subject Quick Filter Chips */}
-            {availableSubjects.length > 0 && (
-              <div className="pt-2 border-t border-slate-100 dark:border-slate-800/60 flex flex-wrap items-center gap-2">
-                <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider shrink-0 mr-1">
-                  Subjects:
+            {/* Centralized University Segmented / Chip Filter */}
+            <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800/60 space-y-2">
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider shrink-0 mr-1 flex items-center gap-1">
+                  <GraduationCap className="w-3.5 h-3.5" /> University:
                 </span>
-                {availableSubjects.map((sub) => {
-                  const isSelected = selectedSubject.toLowerCase() === sub.toLowerCase();
+                {MAJOR_UNIVERSITIES.map((uni) => {
+                  const isSelected = selectedUniversity === uni.id;
                   return (
                     <button
-                      key={sub}
+                      key={uni.id || "all"}
                       type="button"
-                      onClick={() => setSelectedSubject(isSelected ? "" : sub)}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-all cursor-pointer ${
+                      onClick={() => setSelectedUniversity(isSelected ? "" : uni.id)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold shrink-0 transition-all cursor-pointer ${
                         isSelected
-                          ? "bg-blue-50 dark:bg-blue-950/80 border-blue-400 dark:border-blue-600 text-blue-700 dark:text-blue-300 font-semibold shadow-2xs"
-                          : "bg-slate-50 dark:bg-slate-800/60 border-slate-200/80 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600 hover:text-blue-600 dark:hover:text-blue-400"
+                          ? "bg-blue-600 text-white shadow-sm shadow-blue-500/20 font-bold"
+                          : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
                       }`}
                     >
-                      {sub}
+                      {uni.label}
                     </button>
                   );
                 })}
               </div>
-            )}
+
+              {/* Helper Guidance Note for Autonomous & Other Universities */}
+              <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5 pt-0.5">
+                <span className="text-amber-500 font-bold text-sm">💡</span>
+                <span>
+                  Don't see your university or autonomous college? You can simply search for it by typing in the search bar above!
+                </span>
+              </p>
+            </div>
           </div>
         )}
       </div>

@@ -195,6 +195,15 @@ export default function NoteCard({ note, onPreview }) {
           <span className="bg-slate-100/90 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-medium px-3 py-1 rounded-lg">
             {note.semester ? `Sem ${note.semester}` : "Full Notes"}
           </span>
+
+          {(note.university || note.uploaderCollege) && (
+            <span
+              className="bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-900/50 text-xs font-medium px-2.5 py-1 rounded-lg truncate max-w-[170px]"
+              title={note.university || note.uploaderCollege}
+            >
+              {note.university || note.uploaderCollege}
+            </span>
+          )}
         </div>
       </div>
 
@@ -206,7 +215,7 @@ export default function NoteCard({ note, onPreview }) {
             {note.downloads ? `${note.downloads} Downloads` : `${note.views || 0} Views`}
           </div>
           <div className="text-xs text-slate-400 dark:text-slate-500 font-normal truncate mt-0.5">
-            By {note.uploaderName || "Student"}{note.uploaderCollege ? ` • ${note.uploaderCollege}` : ""}
+            By {note.uploaderName || "Student"}{note.university ? ` • ${note.university}` : (note.uploaderCollege ? ` • ${note.uploaderCollege}` : "")}
           </div>
         </div>
 

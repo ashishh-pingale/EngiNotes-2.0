@@ -28,6 +28,7 @@ export default function UploadPage() {
   // Form Fields
   const [title, setTitle] = useState("");
   const [subject, setSubject] = useState("");
+  const [university, setUniversity] = useState("");
   const [branch, setBranch] = useState(userProfile?.branch || "CSE");
   const [year, setYear] = useState(userProfile?.year || "1");
   const [semester, setSemester] = useState("1");
@@ -78,8 +79,8 @@ export default function UploadPage() {
       setErrorMsg("Please select a PDF file to upload.");
       return;
     }
-    if (!title.trim() || !subject.trim()) {
-      setErrorMsg("Please fill in both Title and Subject.");
+    if (!title.trim() || !subject.trim() || !university.trim()) {
+      setErrorMsg("Please fill in Title, Subject, and University / Institute.");
       return;
     }
 
@@ -97,6 +98,8 @@ export default function UploadPage() {
       await createNoteSubmission({
         title: title.trim(),
         subject: subject.trim(),
+        university: university.trim(),
+        uploaderCollege: university.trim() || userProfile?.college || "",
         branch,
         year,
         semester,
@@ -107,8 +110,7 @@ export default function UploadPage() {
         fileSize: (file.size / (1024 * 1024)).toFixed(2) + " MB",
         uploaderId: currentUser?.uid || "anonymous",
         uploaderName: userProfile?.name || currentUser?.displayName || "Student",
-        uploaderAvatar: userProfile?.profilePicture || "",
-        uploaderCollege: userProfile?.college || ""
+        uploaderAvatar: userProfile?.profilePicture || ""
       });
 
       setProgress(100);
@@ -125,6 +127,7 @@ export default function UploadPage() {
     setFile(null);
     setTitle("");
     setSubject("");
+    setUniversity("");
     setDescription("");
     setProgress(0);
     setShowSuccessModal(false);
@@ -248,6 +251,32 @@ export default function UploadPage() {
               placeholder="e.g. Database Management Systems"
               className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/80 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white dark:focus:bg-slate-800 transition-all"
             />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 flex items-center justify-between">
+              <span>University / Institute <span className="text-red-500">*</span></span>
+              <span className="text-[10px] font-normal text-slate-400 dark:text-slate-500 lowercase tracking-normal">e.g. SPPU, MU, VTU</span>
+            </label>
+            <input
+              type="text"
+              required
+              list="major-universities-list"
+              value={university}
+              onChange={(e) => setUniversity(e.target.value)}
+              placeholder="e.g. SPPU, Mumbai University, VTU, or Autonomous College"
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/80 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white dark:focus:bg-slate-800 transition-all"
+            />
+            <datalist id="major-universities-list">
+              <option value="SPPU (Pune University)" />
+              <option value="Mumbai University (MU)" />
+              <option value="VTU (Visvesvaraya Technological University)" />
+              <option value="AKTU (Dr. A.P.J. Abdul Kalam Technical University)" />
+              <option value="Anna University" />
+              <option value="GTU (Gujarat Technological University)" />
+              <option value="RTU (Rajasthan Technical University)" />
+              <option value="Autonomous Institute" />
+            </datalist>
           </div>
 
           <div className="space-y-1.5">

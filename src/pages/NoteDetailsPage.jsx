@@ -431,13 +431,18 @@ export default function NoteDetailsPage() {
           {/* Main Info Card */}
           <div className="bg-white dark:bg-slate-900/90 p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-6">
             <div>
-              <div className="flex items-center gap-2 mb-3">
+              <div className="flex items-center gap-2 mb-3 flex-wrap">
                 <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-900">
                   {note.branch}
                 </span>
                 <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
                   Year {note.year} • Sem {note.semester}
                 </span>
+                {(note.university || note.uploaderCollege) && (
+                  <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-blue-50/70 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/40 flex items-center gap-1">
+                    <Building className="w-3 h-3" /> {note.university || note.uploaderCollege}
+                  </span>
+                )}
               </div>
               <h1 className="text-2xl font-bold text-slate-900 dark:text-white leading-snug">{note.title}</h1>
               <p className="text-base font-semibold text-blue-600 dark:text-blue-400 mt-1">{note.subject}</p>
@@ -551,10 +556,10 @@ export default function NoteDetailsPage() {
                 <h3 className="font-bold text-slate-900 dark:text-white truncate">
                   {note.uploaderName || "Anonymous Student"}
                 </h3>
-                {note.uploaderCollege && (
+                {(note.university || note.uploaderCollege) && (
                   <p className="text-xs text-slate-500 dark:text-slate-400 truncate flex items-center gap-1 mt-0.5">
                     <Building className="w-3 h-3 text-slate-400" />
-                    {note.uploaderCollege}
+                    {note.university || note.uploaderCollege}
                   </p>
                 )}
               </div>

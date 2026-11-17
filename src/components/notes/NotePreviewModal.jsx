@@ -163,10 +163,10 @@ export default function NotePreviewModal({ note, isOpen, onClose }) {
                 <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">
                   {note.uploaderName || "Anonymous"}
                 </p>
-                {note.uploaderCollege && (
+                {(note.university || note.uploaderCollege) && (
                   <p className="text-xs text-slate-500 dark:text-slate-400 truncate flex items-center gap-1">
                     <Building className="w-3 h-3" />
-                    {note.uploaderCollege}
+                    {note.university || note.uploaderCollege}
                   </p>
                 )}
               </div>
