@@ -6,7 +6,9 @@ import {
   createUserWithEmailAndPassword,
   signOut,
   sendEmailVerification,
-  reload
+  reload,
+  GoogleAuthProvider,
+  signInWithPopup
 } from "firebase/auth";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 
@@ -106,6 +108,39 @@ export function AuthProvider({ children }) {
     return signOut(auth);
   }
 
+  async function signInWithGoogle() {
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: "select_account" });
+    const cred = await signInWithPopup(auth, provider);
+    const user = cred.user;
+
+    // Check if user profile document exists in Firestore
+    try {
+      const userRef = doc(db, "users", user.uid);
+      const snap = await getDoc(userRef);
+
+      if (!snap.exists()) {
+        // First-time Google user: initialize default student profile
+        await setDoc(userRef, {
+          name: user.displayName || user.email?.split("@")[0] || "Student",
+          email: user.email,
+          college: "",
+          branch: "CSE",
+          year: "1",
+          role: "user",
+          bio: "",
+          profilePicture: user.photoURL || "",
+          createdAt: serverTimestamp()
+        });
+      }
+    } catch (e) {
+      console.warn("Error creating/verifying Google user profile in Firestore:", e);
+    }
+
+    await loadUserData(user);
+    return user;
+  }
+
   async function refreshUser() {
     if (auth.currentUser) {
       await reload(auth.currentUser);
@@ -121,6 +156,7 @@ export function AuthProvider({ children }) {
     loading,
     login,
     register,
+    signInWithGoogle,
     logout,
     refreshUser
   };
