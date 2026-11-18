@@ -39,7 +39,7 @@ const faqs = [
   },
   {
     q: "Can I connect with students from other colleges?",
-    a: "Absolutely! The Discover page allows you to search for students by branch and college, follow them, and exchange questions via direct chat."
+    a: "Absolutely! The Discover page allows you to search for students by branch and college, follow them, and get connected with each other."
   },
   {
     q: "What file formats are supported?",
@@ -106,9 +106,8 @@ export default function AboutPage() {
               >
                 <span>{faq.q}</span>
                 <ChevronDown
-                  className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${
-                    openFaq === idx ? "rotate-180 text-blue-600 dark:text-blue-400" : ""
-                  }`}
+                  className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${openFaq === idx ? "rotate-180 text-blue-600 dark:text-blue-400" : ""
+                    }`}
                 />
               </button>
               {openFaq === idx && (

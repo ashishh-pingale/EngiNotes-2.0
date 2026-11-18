@@ -53,7 +53,7 @@ const features = [
   {
     icon: <Users className="w-6 h-6 text-indigo-600" />,
     title: "Vibrant Peer Community",
-    desc: "Discover top contributors from your college, follow classmates, and chat directly for doubts."
+    desc: "Discover top contributors from your college, follow classmates, and get connected with each other."
   },
   {
     icon: <UploadCloud className="w-6 h-6 text-emerald-500" />,
