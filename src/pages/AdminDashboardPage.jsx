@@ -31,13 +31,77 @@ import {
   FileText,
   X,
   Flag,
-  AlertTriangle
+  AlertTriangle,
+  Reply,
+  Copy,
+  ExternalLink,
+  Send
 } from "lucide-react";
 import {
   fetchNoteReports,
   updateReportStatus,
   deleteReport
 } from "../services/reportService";
+
+const REPLY_TEMPLATES = {
+  general: {
+    label: "General Inquiry",
+    generate: (m) => `Hi ${m?.name || "Student"},
+
+Thank you for reaching out to the EngiNotes team regarding "${m?.subject || "your inquiry"}".
+
+We have reviewed your message:
+> "${m?.message || ""}"
+
+We would like to inform you that [enter your response here].
+
+If you have any further questions or suggestions, please feel free to reply directly to this email!
+
+Best regards,
+EngiNotes Academic Support Team
+https://enginotes.org`
+  },
+  missing_notes: {
+    label: "Missing / Quality",
+    generate: (m) => `Hi ${m?.name || "Student"},
+
+Thank you for letting us know about the notes issue regarding "${m?.subject || "study material"}".
+
+We have reviewed your inquiry:
+> "${m?.message || ""}"
+
+Our moderation team has investigated this upload. We are in the process of reviewing the material and reaching out to the contributor for the updated / missing chapters. 
+
+We appreciate your vigilance in keeping our student study resources accurate and complete!
+
+Best regards,
+EngiNotes Quality & Moderation Team
+https://enginotes.org`
+  },
+  dmca_copyright: {
+    label: "DMCA / Copyright",
+    generate: (m) => `Hi ${m?.name || "Student"},
+
+Thank you for contacting the EngiNotes Administration regarding "${m?.subject || "Content Inquiry"}".
+
+We take intellectual property and academic integrity seriously:
+> "${m?.message || ""}"
+
+The identified document has been temporarily unlisted pending formal review in accordance with our terms of service and DMCA policy. 
+
+Thank you for bringing this to our attention.
+
+Best regards,
+EngiNotes Legal & Compliance
+https://enginotes.org`
+  },
+  blank: {
+    label: "Custom Blank",
+    generate: (m) => `Hi ${m?.name || "Student"},
+
+`
+  }
+};
 
 export default function AdminDashboardPage() {
   const { currentUser } = useAuth();
@@ -59,6 +123,14 @@ export default function AdminDashboardPage() {
   // Remove User Confirmation Modal
   const [userToDelete, setUserToDelete] = useState(null);
   const [deletingUser, setDeletingUser] = useState(false);
+
+  // Contact Message Reply Modal
+  const [replyModalMessage, setReplyModalMessage] = useState(null);
+  const [replyText, setReplyText] = useState("");
+  const [selectedTemplate, setSelectedTemplate] = useState("general");
+  const [copiedEmail, setCopiedEmail] = useState(false);
+  const [copiedReply, setCopiedReply] = useState(false);
+  const [updatingReplyStatus, setUpdatingReplyStatus] = useState(false);
 
   // Search filter
   const [search, setSearch] = useState("");
@@ -254,6 +326,102 @@ export default function AdminDashboardPage() {
     } catch (err) {
       console.error("Mark read error:", err);
     }
+  }
+
+  function handleOpenReplyModal(m) {
+    setReplyModalMessage(m);
+    setSelectedTemplate("general");
+    setReplyText(REPLY_TEMPLATES.general.generate(m));
+    setCopiedEmail(false);
+    setCopiedReply(false);
+
+    // If message is unread, automatically mark as read
+    if (m.status === "unread") {
+      handleMarkMessageRead(m.id);
+    }
+  }
+
+  function handleTemplateSelect(key) {
+    setSelectedTemplate(key);
+    if (REPLY_TEMPLATES[key]) {
+      setReplyText(REPLY_TEMPLATES[key].generate(replyModalMessage));
+    }
+  }
+
+  async function handleSendReplyEmail() {
+    if (!replyModalMessage) return;
+
+    const email = replyModalMessage.email;
+    const subject = `Re: ${replyModalMessage.subject || "EngiNotes Inquiry"}`;
+    const body = replyText;
+
+    const mailtoUrl = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
+    try {
+      setUpdatingReplyStatus(true);
+      await updateDoc(doc(db, "contactMessages", replyModalMessage.id), {
+        status: "replied",
+        repliedAt: serverTimestamp()
+      });
+      setContactMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === replyModalMessage.id
+            ? { ...msg, status: "replied", repliedAt: { seconds: Math.floor(Date.now() / 1000) } }
+            : msg
+        )
+      );
+      if (addToast) {
+        addToast("Opened email client & marked message as Replied!", "success");
+      }
+    } catch (err) {
+      console.error("Error updating reply status:", err);
+    } finally {
+      setUpdatingReplyStatus(false);
+      setReplyModalMessage(null);
+      // Trigger default mail client
+      window.location.href = mailtoUrl;
+    }
+  }
+
+  async function handleMarkMessageReplied(msgId) {
+    try {
+      setUpdatingReplyStatus(true);
+      await updateDoc(doc(db, "contactMessages", msgId), {
+        status: "replied",
+        repliedAt: serverTimestamp()
+      });
+      setContactMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === msgId
+            ? { ...msg, status: "replied", repliedAt: { seconds: Math.floor(Date.now() / 1000) } }
+            : msg
+        )
+      );
+      if (addToast) {
+        addToast("Inquiry marked as Replied.", "success");
+      }
+      setReplyModalMessage(null);
+    } catch (err) {
+      console.error("Error marking as replied:", err);
+    } finally {
+      setUpdatingReplyStatus(false);
+    }
+  }
+
+  function handleCopyReplyText() {
+    if (!replyText) return;
+    navigator.clipboard.writeText(replyText);
+    setCopiedReply(true);
+    setTimeout(() => setCopiedReply(false), 2000);
+    if (addToast) addToast("Reply text copied to clipboard!", "success");
+  }
+
+  function handleCopyStudentEmail() {
+    if (!replyModalMessage?.email) return;
+    navigator.clipboard.writeText(replyModalMessage.email);
+    setCopiedEmail(true);
+    setTimeout(() => setCopiedEmail(false), 2000);
+    if (addToast) addToast("Student email copied to clipboard!", "success");
   }
 
   async function handleDismissReport(reportId) {
@@ -666,45 +834,84 @@ export default function AdminDashboardPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {filteredContactMessages.map((m) => (
-                    <tr key={m.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
-                      <td className="py-4 px-4 font-medium text-slate-900 dark:text-white">
-                        <div>{m.name}</div>
-                        <div className="text-xs text-slate-400 dark:text-slate-500 font-normal">{m.email}</div>
-                      </td>
-                      <td className="py-4 px-4 text-xs font-semibold text-blue-600 dark:text-blue-400">
-                        {m.subject}
-                      </td>
-                      <td className="py-4 px-4 text-xs max-w-xs truncate">{m.message}</td>
-                      <td className="py-4 px-4 text-xs">
-                        <span
-                          className={`px-2 py-0.5 rounded font-semibold ${
-                            m.status === "unread"
-                              ? "bg-amber-100 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300"
-                              : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
-                          }`}
-                        >
-                          {m.status || "unread"}
-                        </span>
-                      </td>
-                      <td className="py-4 px-4 text-right space-x-2">
-                        {m.status === "unread" && (
-                          <button
-                            onClick={() => handleMarkMessageRead(m.id)}
-                            className="px-2.5 py-1 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-medium text-slate-700 dark:text-slate-200 cursor-pointer"
-                          >
-                            Mark Read
-                          </button>
-                        )}
-                        <button
-                          onClick={() => handleDeleteMessage(m.id)}
-                          className="p-1 rounded text-slate-400 dark:text-slate-500 hover:text-red-600 dark:hover:text-red-400 cursor-pointer"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                  {filteredContactMessages.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="text-center py-12 text-slate-400 dark:text-slate-500 text-sm">
+                        {search.trim()
+                          ? `No messages matching "${search.trim()}".`
+                          : "No contact messages received yet."}
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    filteredContactMessages.map((m) => (
+                      <tr key={m.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
+                        <td className="py-4 px-4 font-medium text-slate-900 dark:text-white">
+                          <div className="font-semibold">{m.name}</div>
+                          <div className="text-xs text-slate-400 dark:text-slate-500 font-normal">{m.email}</div>
+                        </td>
+                        <td className="py-4 px-4 text-xs font-semibold text-blue-600 dark:text-blue-400">
+                          {m.subject}
+                        </td>
+                        <td className="py-4 px-4 text-xs max-w-xs">
+                          <p className="truncate text-slate-600 dark:text-slate-300" title={m.message}>
+                            {m.message}
+                          </p>
+                          {m.createdAt?.seconds && (
+                            <span className="text-[10px] text-slate-400 dark:text-slate-500 block mt-0.5">
+                              {new Date(m.createdAt.seconds * 1000).toLocaleDateString([], {
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric"
+                              })}
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-4 px-4 text-xs">
+                          {m.status === "replied" ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-semibold bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300">
+                              <Check className="w-3 h-3" /> Replied
+                            </span>
+                          ) : m.status === "read" ? (
+                            <span className="px-2.5 py-0.5 rounded-full font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                              Read
+                            </span>
+                          ) : (
+                            <span className="px-2.5 py-0.5 rounded-full font-semibold bg-amber-100 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300">
+                              Unread
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-4 px-4 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              onClick={() => handleOpenReplyModal(m)}
+                              className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-2xs cursor-pointer"
+                              title="View message and reply via email"
+                            >
+                              <Reply className="w-3.5 h-3.5" />
+                              <span>Reply</span>
+                            </button>
+                            {m.status === "unread" && (
+                              <button
+                                onClick={() => handleMarkMessageRead(m.id)}
+                                className="px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-medium text-slate-700 dark:text-slate-200 transition-colors cursor-pointer"
+                                title="Mark message as read"
+                              >
+                                Mark Read
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleDeleteMessage(m.id)}
+                              className="p-1.5 rounded-xl text-slate-400 dark:text-slate-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors cursor-pointer"
+                              title="Delete message"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -895,6 +1102,174 @@ export default function AdminDashboardPage() {
             </button>
           </div>
         </div>
+      </Modal>
+
+      {/* Contact Message Reply Modal */}
+      <Modal
+        isOpen={!!replyModalMessage}
+        onClose={() => !updatingReplyStatus && setReplyModalMessage(null)}
+        title="Reply to Student Inquiry"
+        maxWidth="max-w-2xl"
+      >
+        {replyModalMessage && (
+          <div className="space-y-5">
+            {/* Student & Inquiry Meta Header */}
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <UserAvatar
+                  name={replyModalMessage.name}
+                  size="md"
+                  className="shadow-2xs"
+                />
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">
+                      {replyModalMessage.name || "Student"}
+                    </h4>
+                    <span className="text-xs px-2 py-0.5 rounded-md font-semibold bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-900/40">
+                      {replyModalMessage.subject || "General Inquiry"}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    <span>{replyModalMessage.email}</span>
+                    <button
+                      type="button"
+                      onClick={handleCopyStudentEmail}
+                      className="text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer"
+                      title="Copy student email"
+                    >
+                      {copiedEmail ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {replyModalMessage.createdAt?.seconds && (
+                <div className="text-[11px] text-slate-400 dark:text-slate-500 flex items-center gap-1 sm:self-start">
+                  <Clock className="w-3 h-3" />
+                  <span>
+                    {new Date(replyModalMessage.createdAt.seconds * 1000).toLocaleString([], {
+                      month: "short",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit"
+                    })}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Original Student Message Quote */}
+            <div className="p-3.5 rounded-xl bg-slate-100/70 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 space-y-1">
+              <div className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                Student's Message:
+              </div>
+              <p className="text-xs text-slate-700 dark:text-slate-200 whitespace-pre-wrap leading-relaxed max-h-36 overflow-y-auto">
+                "{replyModalMessage.message}"
+              </p>
+            </div>
+
+            {/* Quick Template Selector */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  Select Reply Template:
+                </label>
+                <span className="text-[11px] text-slate-400">Customizable below</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {Object.entries(REPLY_TEMPLATES).map(([key, t]) => {
+                  const isSelected = selectedTemplate === key;
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => handleTemplateSelect(key)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                        isSelected
+                          ? "bg-blue-600 text-white shadow-2xs font-bold"
+                          : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700"
+                      }`}
+                    >
+                      {t.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Editable Reply Body */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  Email Response Body:
+                </label>
+                <button
+                  type="button"
+                  onClick={handleCopyReplyText}
+                  className="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 font-medium cursor-pointer"
+                >
+                  {copiedReply ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-500" />
+                      <span className="text-emerald-500">Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5" />
+                      <span>Copy Text</span>
+                    </>
+                  )}
+                </button>
+              </div>
+              <textarea
+                rows={8}
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value)}
+                className="w-full p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-mono leading-relaxed focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+                placeholder="Draft your reply here..."
+              />
+            </div>
+
+            {/* Actions */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                {replyModalMessage.status !== "replied" && (
+                  <button
+                    type="button"
+                    onClick={() => handleMarkMessageReplied(replyModalMessage.id)}
+                    disabled={updatingReplyStatus}
+                    className="w-full sm:w-auto px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-50 cursor-pointer"
+                    title="Mark as replied in dashboard without launching email client"
+                  >
+                    Mark as Replied Only
+                  </button>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <button
+                  type="button"
+                  onClick={() => setReplyModalMessage(null)}
+                  disabled={updatingReplyStatus}
+                  className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-50 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSendReplyEmail}
+                  disabled={updatingReplyStatus}
+                  className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center justify-center gap-2 shadow-sm shadow-blue-500/25 transition-all disabled:opacity-50 cursor-pointer"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>Send via Email App</span>
+                  <ExternalLink className="w-3 h-3 opacity-70" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );
