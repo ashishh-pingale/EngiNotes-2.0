@@ -144,7 +144,9 @@ export default function AdminDashboardPage() {
         (n.title && n.title.toLowerCase().includes(s)) ||
         (n.subject && n.subject.toLowerCase().includes(s)) ||
         (n.uploaderName && n.uploaderName.toLowerCase().includes(s)) ||
-        (n.branch && n.branch.toLowerCase().includes(s))
+        (n.branch && n.branch.toLowerCase().includes(s)) ||
+        (n.university && n.university.toLowerCase().includes(s)) ||
+        (n.uploaderCollege && n.uploaderCollege.toLowerCase().includes(s))
     );
   }, [pendingNotes, search]);
 
@@ -156,7 +158,9 @@ export default function AdminDashboardPage() {
         (n.title && n.title.toLowerCase().includes(s)) ||
         (n.subject && n.subject.toLowerCase().includes(s)) ||
         (n.uploaderName && n.uploaderName.toLowerCase().includes(s)) ||
-        (n.branch && n.branch.toLowerCase().includes(s))
+        (n.branch && n.branch.toLowerCase().includes(s)) ||
+        (n.university && n.university.toLowerCase().includes(s)) ||
+        (n.uploaderCollege && n.uploaderCollege.toLowerCase().includes(s))
     );
   }, [approvedNotes, search]);
 
@@ -254,10 +258,19 @@ export default function AdminDashboardPage() {
         }
       }
 
-      await loadAdminData();
+      setPendingNotes((prev) => prev.filter((n) => n.id !== note.id));
+      setApprovedNotes((prev) => [
+        { ...note, status: "approved", approvedAt: { seconds: Math.floor(Date.now() / 1000) } },
+        ...prev
+      ]);
+      if (addToast) {
+        addToast(`Note "${note.title}" approved successfully!`, "success");
+      }
     } catch (err) {
       console.error("Approve error:", err);
-      alert("Failed to approve note: " + (err.message || "Missing or insufficient permissions"));
+      if (addToast) {
+        addToast("Failed to approve note: " + (err.message || "Missing or insufficient permissions"), "error");
+      }
     }
   }
 
@@ -289,12 +302,18 @@ export default function AdminDashboardPage() {
         }
       }
 
+      const rejectedTitle = rejectModalNote.title;
+      setPendingNotes((prev) => prev.filter((n) => n.id !== rejectModalNote.id));
       setRejectModalNote(null);
       setRejectReason("");
-      await loadAdminData();
+      if (addToast) {
+        addToast(`Note "${rejectedTitle}" has been rejected.`, "info");
+      }
     } catch (err) {
       console.error("Reject error:", err);
-      alert("Failed to reject note: " + (err.message || "Missing or insufficient permissions"));
+      if (addToast) {
+        addToast("Failed to reject note: " + (err.message || "Missing or insufficient permissions"), "error");
+      }
     }
   }
 
@@ -302,18 +321,28 @@ export default function AdminDashboardPage() {
     if (!window.confirm("Are you sure you want to permanently delete this note?")) return;
     try {
       await deleteDoc(doc(db, "notes", noteId));
-      await loadAdminData();
+      setApprovedNotes((prev) => prev.filter((n) => n.id !== noteId));
+      setPendingNotes((prev) => prev.filter((n) => n.id !== noteId));
+      if (addToast) {
+        addToast("Note permanently deleted.", "success");
+      }
     } catch (err) {
       console.error("Delete note error:", err);
+      if (addToast) {
+        addToast("Failed to delete note: " + (err.message || "Unknown error"), "error");
+      }
     }
   }
 
   async function handleDeleteMessage(msgId) {
+    if (!window.confirm("Are you sure you want to delete this message?")) return;
     try {
       await deleteDoc(doc(db, "contactMessages", msgId));
       setContactMessages((prev) => prev.filter((m) => m.id !== msgId));
+      if (addToast) addToast("Contact message deleted.", "success");
     } catch (err) {
       console.error("Delete message error:", err);
+      if (addToast) addToast("Failed to delete message: " + (err.message || "Unknown error"), "error");
     }
   }
 
@@ -329,9 +358,10 @@ export default function AdminDashboardPage() {
   }
 
   function handleOpenReplyModal(m) {
-    setReplyModalMessage(m);
+    const updatedModalMsg = m.status === "unread" ? { ...m, status: "read" } : m;
+    setReplyModalMessage(updatedModalMsg);
     setSelectedTemplate("general");
-    setReplyText(REPLY_TEMPLATES.general.generate(m));
+    setReplyText(REPLY_TEMPLATES.general.generate(updatedModalMsg));
     setCopiedEmail(false);
     setCopiedReply(false);
 
@@ -378,8 +408,13 @@ export default function AdminDashboardPage() {
     } finally {
       setUpdatingReplyStatus(false);
       setReplyModalMessage(null);
-      // Trigger default mail client
-      window.location.href = mailtoUrl;
+      // Trigger default mail client safely
+      const a = document.createElement("a");
+      a.href = mailtoUrl;
+      a.rel = "noopener noreferrer";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
     }
   }
 
@@ -430,20 +465,26 @@ export default function AdminDashboardPage() {
       setNoteReports((prev) =>
         prev.map((r) => (r.id === reportId ? { ...r, status: "dismissed" } : r))
       );
+      if (addToast) addToast("Report dismissed.", "info");
     } catch (err) {
       console.error("Dismiss report error:", err);
+      if (addToast) addToast("Failed to dismiss report.", "error");
     }
   }
 
   async function handleResolveReportAndRejectNote(report) {
     try {
-      // 1. Mark note rejected
+      // 1. Mark note rejected if note exists
       if (report.noteId) {
-        await updateDoc(doc(db, "notes", report.noteId), {
-          status: "rejected",
-          rejectedAt: serverTimestamp(),
-          rejectReason: `Removed due to moderation report: ${report.reason}`
-        });
+        try {
+          await updateDoc(doc(db, "notes", report.noteId), {
+            status: "rejected",
+            rejectedAt: serverTimestamp(),
+            rejectReason: `Removed due to moderation report: ${report.reason}`
+          });
+        } catch (noteErr) {
+          console.warn("Could not reject note doc (it may already be deleted):", noteErr);
+        }
       }
       // 2. Mark report resolved
       await updateReportStatus(report.id, "resolved", "Note unapproved and taken down");
@@ -453,17 +494,22 @@ export default function AdminDashboardPage() {
       // 3. Refresh notes lists
       setApprovedNotes((prev) => prev.filter((n) => n.id !== report.noteId));
       setPendingNotes((prev) => prev.filter((n) => n.id !== report.noteId));
+      if (addToast) addToast("Report resolved and note taken down.", "success");
     } catch (err) {
       console.error("Resolve report error:", err);
+      if (addToast) addToast("Failed to resolve report.", "error");
     }
   }
 
   async function handleDeleteReport(reportId) {
+    if (!window.confirm("Are you sure you want to delete this report record?")) return;
     try {
       await deleteReport(reportId);
       setNoteReports((prev) => prev.filter((r) => r.id !== reportId));
+      if (addToast) addToast("Report record deleted.", "success");
     } catch (err) {
       console.error("Delete report record error:", err);
+      if (addToast) addToast("Failed to delete report record.", "error");
     }
   }
 
@@ -492,7 +538,7 @@ export default function AdminDashboardPage() {
     }
   }
 
-  const totalDownloads = approvedNotes.reduce((acc, n) => acc + (n.downloads || 0), 0);
+  const totalDownloads = approvedNotes.reduce((acc, n) => acc + (Number(n.downloads) || 0), 0);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 min-h-[calc(100vh-140px)]">
